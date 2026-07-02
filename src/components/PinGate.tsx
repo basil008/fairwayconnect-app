@@ -104,13 +104,14 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
     setVerifying(true);
     setError('');
     try {
-      const res = await fetch(`/api/member-pin/${code}`);
+      const res = await fetch('/api/auth/member-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: code }),
+      });
 
       if (res.ok) {
         const data = await res.json();
-
-        // ── DIAGNOSTIC: Log the API response to help debug ──
-        console.log('PIN API response:', JSON.stringify(data, null, 2));
 
         // ── DEFENSIVE: Handle multiple possible response shapes ──
         // The API might return { id, name, handicap } directly
@@ -128,8 +129,6 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
           setPin(['', '', '', '']);
           return;
         }
-
-        console.log('Setting member:', { id: String(id), name, handicap });
 
         setAccessing(true);
 

@@ -63,7 +63,7 @@ export async function POST(request: Request) {
       sql: 'SELECT COUNT(*) as count FROM side_comps WHERE event_id = ? AND type = ?',
       args: [event_id, 'twos']
     });
-    const twosCount = (twosCountResult.rows[0] as {count: number}).count;
+    const twosCount = (twosCountResult.rows[0] as unknown as {count: number}).count;
 
     // Get the twos pot from prize_config (if manually set)
     const prizeConfigResult = await db.execute({

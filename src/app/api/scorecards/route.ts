@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { seedDatabase } from '@/lib/seed';
 import { calculateStablefordPoints, WHSCourseSettings } from '@/lib/stableford';
 import { v4 as uuidv4 } from 'uuid';
 
@@ -18,7 +17,6 @@ async function getCurrentEventId(db: ReturnType<typeof getDb>): Promise<string |
 }
 
 export async function GET(request: Request) {
-  await seedDatabase();
   const db = getDb();
   const url = new URL(request.url);
   const memberId = url.searchParams.get('member_id');
@@ -56,7 +54,6 @@ export async function GET(request: Request) {
 }
 
 export async function POST(request: Request) {
-  await seedDatabase();
   const db = getDb();
   const body = await request.json();
   const { event_id, member_id, scores, entry_method, scan_image_path } = body;
@@ -210,7 +207,6 @@ export async function POST(request: Request) {
 
 // PUT - Recalculate all stableford points for an event (used after algorithm fixes)
 export async function PUT(request: Request) {
-  await seedDatabase();
   const db = getDb();
   const body = await request.json();
   const { event_id } = body;
@@ -227,6 +223,23 @@ export async function PUT(request: Request) {
   const holes = holesResult.rows as unknown as Array<{
     hole_number: number; par: number; stroke_index: number;
   }>;
+
+  // WHS course settings — the recalc MUST use the same corrected formula
+  // as submission (allowance applied before rounding), otherwise a recalc
+  // silently rewrites scores with the wrong playing handicap.
+  const whsResult = await db.execute({
+    sql: 'SELECT slope_rating, course_rating, course_par, handicap_allowance FROM events WHERE id = ?',
+    args: [event_id]
+  });
+  const whs = whsResult.rows[0] as unknown as {
+    slope_rating?: number; course_rating?: number; course_par?: number; handicap_allowance?: number;
+  } | undefined;
+  const recalcCourseSettings: WHSCourseSettings | undefined = whs?.slope_rating ? {
+    slopeRating: whs.slope_rating || 113,
+    courseRating: whs.course_rating || 72,
+    coursePar: whs.course_par || 72,
+    handicapAllowance: whs.handicap_allowance || 0.95,
+  } : undefined;
 
   // Get all scorecards for this event
   const scorecardsResult = await db.execute({
@@ -258,7 +271,7 @@ export async function PUT(request: Request) {
       const hole = holes.find(h => h.hole_number === score.hole_number);
       if (!hole) continue;
 
-      const newPts = calculateStablefordPoints(score.gross_score, hole.par, hole.stroke_index, sc.handicap);
+      const newPts = calculateStablefordPoints(score.gross_score, hole.par, hole.stroke_index, sc.handicap, recalcCourseSettings);
       
       if (newPts !== score.stableford_points) {
         await db.execute({

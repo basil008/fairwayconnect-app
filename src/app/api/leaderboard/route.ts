@@ -21,7 +21,7 @@ export async function GET() {
         MIN(s.total_gross) as best_gross,
         COALESCE(d.year_starting_deduction, 0) as starting_deduction
       FROM members m
-      LEFT JOIN scorecards s ON m.id = s.member_id AND (s.dns IS NULL OR s.dns = 0)
+      LEFT JOIN scorecards s ON m.id = s.member_id
       LEFT JOIN member_deductions d ON m.name LIKE '%' || d.member_name || '%' AND d.year = 2026
       WHERE m.status = 'active' AND (m.member_type IS NULL OR m.member_type != 'visitor')
       GROUP BY m.id, m.name, m.handicap, d.year_starting_deduction
@@ -69,8 +69,8 @@ export async function GET() {
       console.log('📊 No scores yet - showing all members with 0 points');
     }
 
-    // Get last finalised AND published event with prizes for member home page
-    const lastEventResult = await db.execute("SELECT * FROM events WHERE status = 'finalised' AND results_published = 1 ORDER BY date DESC LIMIT 1");
+    // Get last finalised event with prizes for member home page
+    const lastEventResult = await db.execute("SELECT * FROM events WHERE status = 'finalised' ORDER BY date DESC LIMIT 1");
     const lastEvent = lastEventResult.rows[0];
     
     let lastEventData = null;

@@ -15,7 +15,7 @@ interface HandicapChange {
 }
 
 export default function MemberHandicapPage() {
-  const { member, loading } = useMember();
+  const { member } = useMember();
   const [history, setHistory] = useState<HandicapChange[]>([]);
   const [loadingHistory, setLoadingHistory] = useState(true);
   const [showConfirmation, setShowConfirmation] = useState(false);
@@ -70,14 +70,6 @@ export default function MemberHandicapPage() {
     window.location.replace(window.location.href);
   };
 
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center">
-        <div className="text-lg">Loading...</div>
-      </div>
-    );
-  }
-
   if (!member) {
     return null; // MemberAuth will handle redirect
   }
@@ -86,7 +78,7 @@ export default function MemberHandicapPage() {
     return (
       <HandicapConfirmation
         currentHandicap={member.handicap}
-        lastUpdated={member.handicap_updated_at}
+        lastUpdated={member.handicap_updated_at ?? null}
         memberName={member.name}
         onConfirm={handleConfirm}
       />

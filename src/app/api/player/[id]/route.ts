@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { seedDatabase } from '@/lib/seed';
 
 export const dynamic = 'force-dynamic';
 
@@ -8,7 +7,6 @@ export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  await seedDatabase();
   const db = getDb();
   const { id } = await params;
 

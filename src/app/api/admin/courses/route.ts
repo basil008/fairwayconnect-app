@@ -28,7 +28,7 @@ export async function POST(request: NextRequest) {
       // Create new course
       // If 27 or 36 hole course, ONLY create combination entries (not the parent)
       if (hole_type === '27' || hole_type === '36') {
-        const ninesList = (nine_names || '').split(',').map(n => n.trim());
+        const ninesList = (nine_names || '').split(',').map((n: string) => n.trim());
         
         if (ninesList.length >= 3) {
           // Generate all 18-hole combinations

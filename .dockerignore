@@ -20,3 +20,10 @@ README*.md
 *SUMMARY*.md
 *FIX*.md
 *INVESTIGATION*.md
+# NEVER ship databases or member data in the image
+database/
+data/
+*.db
+*.db-shm
+*.db-wal
+docs/

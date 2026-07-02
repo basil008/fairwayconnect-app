@@ -46,11 +46,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
               ORDER BY r.status, COALESCE(m.name, 'Unknown')`,
         args: [id]
       });
-      // Remove prize_paid from response to fix display bug
-      rsvps = rsvpsResult.rows.map((r: any) => {
-        const { prize_paid, ...rest } = r;
-        return rest;
-      });
+      rsvps = rsvpsResult.rows;
       console.log(`📊 RSVPs loaded: ${rsvps.length} total`);
       
       // Warn about orphaned RSVPs
@@ -98,7 +94,7 @@ export async function GET(request: Request, { params }: { params: Promise<{ id: 
 
     try {
       const scorecardsResult = await db.execute({
-        sql: `SELECT s.*, m.name, m.handicap, s.dns, s.dns_reason FROM scorecards s JOIN members m ON m.id = s.member_id WHERE s.event_id = ? ORDER BY s.total_points DESC`,
+        sql: `SELECT s.*, m.name, m.handicap FROM scorecards s JOIN members m ON m.id = s.member_id WHERE s.event_id = ? ORDER BY s.total_points DESC`,
         args: [id]
       });
       scorecards = scorecardsResult.rows;

@@ -192,8 +192,8 @@ export default function LeaderboardPage() {
                   </p>
                   <p className="text-xs text-gray-400">Hcp {entry.handicap}
                     {entry.member_type === 'visitor' && <span className="ml-1 text-blue-500">(V)</span>}
-                    {live && entry.status !== 'submitted' && entry.holes_played > 0 &&
-                      <span className="ml-1 text-orange-500">Thru {entry.holes_played}</span>}
+                    {live && entry.status !== 'submitted' && (entry.holes_played ?? 0) > 0 &&
+                      <span className="ml-1 text-orange-500">Thru {(entry.holes_played ?? 0)}</span>}
                   </p>
                 </div>
                 <div className="text-right">

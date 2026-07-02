@@ -9,17 +9,22 @@ export function useAdminAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    const auth = sessionStorage.getItem('admin_auth');
-    if (auth === 'true') {
-      setIsAuth(true);
-    } else {
-      router.replace('/');
-    }
-    setChecking(false);
+    // The server middleware is the real gate; this hook just drives the UI.
+    fetch('/api/auth/session')
+      .then(r => r.json())
+      .then(s => {
+        if (s.authenticated && s.role === 'admin') {
+          setIsAuth(true);
+        } else {
+          router.replace('/admin');
+        }
+      })
+      .catch(() => router.replace('/admin'))
+      .finally(() => setChecking(false));
   }, [router]);
 
-  const logout = () => {
-    sessionStorage.removeItem('admin_auth');
+  const logout = async () => {
+    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
     localStorage.removeItem('fairway_remembered_user');
     router.replace('/');
   };
@@ -27,7 +32,7 @@ export function useAdminAuth() {
   return { isAuth, checking, logout };
 }
 
-export function AdminHeader({ title, onLock }: { title: string; onLock: () => void }) {
+export function AdminHeader({ title = 'Admin', onLock }: { title?: string; onLock?: () => void } = {}) {
   return (
     <div className="bg-fairway-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-40">
       <div>
@@ -36,17 +41,20 @@ export function AdminHeader({ title, onLock }: { title: string; onLock: () => vo
       </div>
       <div className="flex items-center gap-2">
         <button
-          onClick={() => {
+          onClick={async () => {
             // Clear admin session and go to member view
-            sessionStorage.removeItem('admin_auth')
-            window.location.href = '/'
+            await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            window.location.href = '/';
           }}
           className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
         >
           🏠 Member View
         </button>
         <button
-          onClick={onLock}
+          onClick={onLock ?? (async () => {
+            await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+            window.location.href = '/admin';
+          })}
           className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
         >
           🔒 Lock

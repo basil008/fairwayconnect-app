@@ -492,7 +492,7 @@ export default function MemberHome() {
                   <span className="text-sm font-medium text-gray-600 mr-3">
                     {index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}
                   </span>
-                  <span className="text-sm font-bold text-gray-900">{player.member_name || player.name}</span>
+                  <span className="text-sm font-bold text-gray-900">{(player as {member_name?: string; name?: string}).member_name || player.name}</span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-xs text-gray-500 mr-2">({player.handicap})</span>
@@ -506,15 +506,15 @@ export default function MemberHome() {
               {lastEventData.front9_winner && (
                 <div>
                   <p className="text-gray-600 font-medium">Front 9</p>
-                  <p className="font-bold text-gray-900">{lastEventData.front9_winner.member_name}</p>
-                  <p className="text-gray-500">{lastEventData.front9_winner.label?.match(/\d+ pts/)?.[0] || ''}</p>
+                  <p className="font-bold text-gray-900">{(lastEventData.front9_winner as {member_name?: string}).member_name}</p>
+                  <p className="text-gray-500">{((lastEventData.front9_winner as {label?: string}).label || '').match(/\d+ pts/)?.[0] || ''}</p>
                 </div>
               )}
               {lastEventData.back9_winner && (
                 <div>
                   <p className="text-gray-600 font-medium">Back 9</p>
-                  <p className="font-bold text-gray-900">{lastEventData.back9_winner.member_name}</p>
-                  <p className="text-gray-500">{lastEventData.back9_winner.label?.match(/\d+ pts/)?.[0] || ''}</p>
+                  <p className="font-bold text-gray-900">{(lastEventData.back9_winner as {member_name?: string}).member_name}</p>
+                  <p className="text-gray-500">{((lastEventData.back9_winner as {label?: string}).label || '').match(/\d+ pts/)?.[0] || ''}</p>
                 </div>
               )}
             </div>

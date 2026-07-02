@@ -30,7 +30,6 @@ export async function GET(request: Request) {
           AND strftime('%Y', e.date) = ?
           AND m.status = 'active'
           AND (m.member_type IS NULL OR m.member_type != 'visitor')
-          AND (s.dns IS NULL OR s.dns = 0)
         ORDER BY m.name, e.date
       `,
       args: [season]
@@ -80,7 +79,7 @@ export async function GET(request: Request) {
       const sortedByPoints = [...member.events].sort((a: any, b: any) => b.points - a.points);
       
       // Mark top N as counting
-      const countingCount = Math.min(seasonInfo.best_of_x, member.events.length);
+      const countingCount = Math.min(Number(seasonInfo.best_of_x) || 6, member.events.length);
       const countingEventIds = new Set(sortedByPoints.slice(0, countingCount).map((e: any) => e.event_id));
       
       // Mark counting flag on original events (preserving date order)

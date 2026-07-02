@@ -65,7 +65,7 @@ export async function GET() {
                   FROM rsvps
                   WHERE event_id = ?
                   GROUP BY status`,
-            args: [currentEvent.id]
+            args: [currentEvent.id as string]
           });
           
           let confirmedCount = 0;

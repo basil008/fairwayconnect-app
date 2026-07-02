@@ -14,7 +14,8 @@ export async function POST(request: Request) {
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
 
   const eventNumber = (event.event_number as number) || 1;
-  const outingCol = `outing_${eventNumber}`;
+  const safeEventNumber = Math.max(1, Math.min(8, Math.floor(Number(eventNumber)) || 1));
+  const outingCol = `outing_${safeEventNumber}`;
   const year = new Date().getFullYear();
 
   // 1. Delete prize allocations for this event

@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { InValue } from '@libsql/client';
+import type { InValue } from '@/lib/db';
 
 export async function POST(req: NextRequest) {
   const db = getDb();

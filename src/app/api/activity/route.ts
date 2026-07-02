@@ -1,11 +1,9 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { seedDatabase } from '@/lib/seed';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
-  await seedDatabase();
   const db = getDb();
 
   const result = await db.execute(`

@@ -1,0 +1,81 @@
+import type { Client, InStatement, ResultSet, InValue } from '@libsql/client';
+// ⬆ TYPE-ONLY imports — erased at compile time. Nothing from @libsql loads here.
+//
+// WHY THIS FILE IS SHAPED THIS WAY (do not "simplify" it):
+// The @libsql/client *node* entry imports the `libsql` native binding at
+// module scope. Next.js standalone tracing does not reliably ship the
+// platform-specific binding (@libsql/linux-x64-musl on the Alpine container),
+// so a top-level `import '@libsql/client'` crashes EVERY route with 500s in
+// production. This took down the 2–3 July deployments.
+//
+// v107 worked on Alpine because it used '@libsql/client/web' — a pure-fetch
+// client with zero native code. We therefore:
+//   • import ONLY types statically,
+//   • use the WEB client for remote Turso URLs (production),
+//   • dynamically import the node client ONLY for local file: databases
+//     (Mac Mini dev / scripts), where the native binding is always present.
+
+export type DbStatement = InStatement;
+export type { InValue };
+
+export interface DbClient {
+  execute(stmt: InStatement | string): Promise<ResultSet>;
+  batch(stmts: InStatement[], mode?: 'write' | 'read' | 'deferred'): Promise<ResultSet[]>;
+}
+
+let clientPromise: Promise<Client> | null = null;
+
+function resolveClient(): Promise<Client> {
+  if (clientPromise) return clientPromise;
+
+  clientPromise = (async (): Promise<Client> => {
+    const url = process.env.DATABASE_URL;
+    const authToken = process.env.DATABASE_AUTH_TOKEN;
+
+    if (url && !url.startsWith('file:')) {
+      // Remote Turso (libsql:// | https:// | wss://) — WEB client, pure fetch.
+      // No native bindings, works on any container including Alpine/musl.
+      const { createClient } = await import('@libsql/client/web');
+      console.log('🌐 Connecting to Turso (web client, no native bindings)');
+      return createClient({ url, authToken });
+    }
+
+    // Local file database — node client (native), Mac Mini / CI only.
+    const localPath = url || process.env.LOCAL_DB_PATH || 'file:./database/fairway-local.db';
+    const fs = await import('fs');
+    const path = await import('path');
+    const dir = path.dirname(localPath.replace(/^file:/, ''));
+    try { fs.mkdirSync(dir, { recursive: true }); } catch { /* read-only fs: let connect fail loudly */ }
+    const { createClient } = await import('@libsql/client');
+    console.log(`🗄️ Connecting to local database: ${localPath}`);
+    return createClient({ url: localPath });
+  })();
+
+  return clientPromise;
+}
+
+// Synchronous facade so the hundreds of existing `const db = getDb()` call
+// sites are unchanged; the real client resolves on first use.
+const facade: DbClient = {
+  async execute(stmt: InStatement | string): Promise<ResultSet> {
+    const c = await resolveClient();
+    return c.execute(stmt as InStatement);
+  },
+  async batch(stmts: InStatement[], mode: 'write' | 'read' | 'deferred' = 'write'): Promise<ResultSet[]> {
+    const c = await resolveClient();
+    return c.batch(stmts, mode);
+  },
+};
+
+export function getDb(): DbClient {
+  return facade;
+}
+
+/**
+ * Execute a set of write statements ATOMICALLY.
+ * If any statement fails, none are applied.
+ */
+export async function executeBatch(statements: DbStatement[]): Promise<void> {
+  if (statements.length === 0) return;
+  await facade.batch(statements, 'write');
+}

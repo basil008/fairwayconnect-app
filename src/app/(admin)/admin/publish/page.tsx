@@ -37,49 +37,35 @@ export default function PublishScoresPage() {
 
   useEffect(() => {
     if (!isAuth) return;
-    // Fetch finalized but unpublished events
-    fetch('/api/events-list')
-      .then(r => r.json())
-      .then(async (events) => {
-        // Find events where status='finalised' AND results_published=0
-        const pendingEvents = events.filter((e: any) => 
-          e.status === 'finalised' && (e.results_published === 0 || e.results_published === null)
-        );
-        
-        if (pendingEvents.length === 0) {
-          setLoading(false);
-          return;
-        }
-        
-        // Get the most recent one
-        const event = pendingEvents.sort((a: any, b: any) => 
-          new Date(b.date).getTime() - new Date(a.date).getTime()
-        )[0];
-        
-        // Fetch event-specific results
-        const resultsRes = await fetch(`/api/events/${event.id}/results`);
-        const results = await resultsRes.json();
-        
-        setEventData(event);
-        setLeaderboard(results.scorecards || []);
-        
-        // Extract Front 9 and Back 9 winners from prizes
-        const front9 = results.prizes?.find((p: any) => p.prize_type === 'front_9');
-        const back9 = results.prizes?.find((p: any) => p.prize_type === 'back_9');
-        setFront9Winner(front9);
-        setBack9Winner(back9);
-        
-        setPublished(event.results_published === 1);
+    fetch('/api/events').then(r => r.json()).then(async (event) => {
+      if (!event || !event.id) {
         setLoading(false);
-      })
-      .catch(() => setLoading(false));
+        return;
+      }
+      
+      // Fetch event-specific results
+      const resultsRes = await fetch(`/api/events/${event.id}/results`);
+      const results = await resultsRes.json();
+      
+      setEventData(event);
+      setLeaderboard(results.scorecards || []);
+      
+      // Extract Front 9 and Back 9 winners from prizes
+      const front9 = results.prizes?.find((p: any) => p.prize_type === 'front_9');
+      const back9 = results.prizes?.find((p: any) => p.prize_type === 'back_9');
+      setFront9Winner(front9);
+      setBack9Winner(back9);
+      
+      setPublished(event?.status === 'finalised');
+      setLoading(false);
+    }).catch(() => setLoading(false));
   }, [isAuth]);
 
   const handlePublish = async () => {
     if (!confirmed || !eventData) return;
     setPublishing(true);
     try {
-      await fetch('/api/publish-results', {
+      await fetch('/api/finalise', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ event_id: eventData.id }),
@@ -94,7 +80,7 @@ export default function PublishScoresPage() {
   if (checking || !isAuth) return null;
 
   const top3 = leaderboard.slice(0, 3);
-  const canPublish = eventData?.status === 'finalised' && eventData?.results_published === 0 && leaderboard.length > 0;
+  const canPublish = eventData?.status === 'in_progress' && leaderboard.length > 0;
 
   return (
     <div>
@@ -119,25 +105,15 @@ export default function PublishScoresPage() {
               View Homepage →
             </Link>
           </div>
-        ) : !eventData ? (
-          /* No Events Awaiting Publication */
-          <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 text-center">
-            <div className="text-6xl mb-4">📋</div>
-            <h2 className="text-2xl font-bold text-gray-700 mb-2">No Events Awaiting Publication</h2>
-            <p className="text-gray-500 mb-6">
-              All finalized events have been published. Finalize an event first to publish its results.
-            </p>
-            <Link href="/admin/dashboard" className="inline-block bg-gray-700 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-800">
-              Go to Dashboard →
-            </Link>
-          </div>
         ) : !canPublish ? (
-          /* Event exists but can't publish */
+          /* Can't Publish Yet */
           <div className="bg-gray-50 border-2 border-gray-200 rounded-2xl p-8 text-center">
             <div className="text-6xl mb-4">⏳</div>
             <h2 className="text-2xl font-bold text-gray-700 mb-2">Not Ready to Publish</h2>
             <p className="text-gray-500 mb-6">
-              Event needs to be finalized first.
+              {eventData?.status === 'upcoming' 
+                ? 'The event hasn\'t started yet. Start the event first.'
+                : 'No scores have been submitted yet.'}
             </p>
             <Link href={`/admin/event/${eventData?.id}`} className="inline-block bg-gray-700 text-white px-6 py-3 rounded-xl font-medium hover:bg-gray-800">
               Go to Event Management →
@@ -238,7 +214,7 @@ export default function PublishScoresPage() {
                   : 'bg-gray-200 text-gray-400 cursor-not-allowed'
               }`}
             >
-              {publishing ? '⏳ Publishing...' : '📢 Publish to All Members'}
+              {publishing ? '⏳ Publishing...' : '📢 Publish Results'}
             </button>
           </>
         )}

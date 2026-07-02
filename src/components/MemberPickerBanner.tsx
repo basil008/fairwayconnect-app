@@ -18,7 +18,11 @@ export default function MemberPickerBanner() {
     setChecking(true);
     setError('');
     try {
-      const res = await fetch(`/api/member-pin/${pin}`);
+      const res = await fetch('/api/auth/member-login', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin }),
+      });
       if (res.ok) {
         const data = await res.json();
         setMember({ id: data.id, name: data.name, handicap: data.handicap });
@@ -47,7 +51,11 @@ export default function MemberPickerBanner() {
         // Auto-submit when 4 digits entered
         setTimeout(() => {
           setChecking(true);
-          fetch(`/api/member-pin/${newPin}`)
+          fetch('/api/auth/member-login', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ pin: newPin }),
+          })
             .then(r => { if (r.ok) return r.json(); throw new Error('invalid'); })
             .then(data => { setMember({ id: data.id, name: data.name, handicap: data.handicap }); setShowPinEntry(false); })
             .catch(() => { setError('Invalid code. Check with your organiser.'); setPin(''); })

@@ -10,7 +10,7 @@ export default function TestBanner() {
     
     // Add padding to body if test site
     if (window.location.hostname.includes('test')) {
-      document.body.style.paddingTop = '88px';
+      document.body.style.paddingTop = '120px';
     }
   }, []);
   
@@ -26,15 +26,15 @@ export default function TestBanner() {
         zIndex: 9999,
         background: 'linear-gradient(135deg, #FFD700 0%, #FFC700 100%)',
         color: '#000',
-        padding: '2px 0',
+        padding: '12px 20px',
         textAlign: 'center',
-        fontWeight: '600',
-        fontSize: '9px',
-        boxShadow: 'none',
-        borderBottom: '1px solid #FF8C00',
-        letterSpacing: '0.3px'
+        fontWeight: 'bold',
+        fontSize: '16px',
+        boxShadow: '0 4px 12px rgba(0,0,0,0.4)',
+        borderBottom: '4px solid #FF8C00',
+        letterSpacing: '1px'
       }}>
-        ⚡ TEST SITE - TRAINING ENVIRONMENT - NOT REAL DATA ⚡
+        🧪 TEST SITE - TRAINING ENVIRONMENT - NOT REAL DATA 🧪
       </div>
     </>
   );

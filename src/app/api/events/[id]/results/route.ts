@@ -52,14 +52,13 @@ export async function GET(
 
     const event = eventResult.rows[0];
 
-    // Get all scorecards with member names (exclude empty/reset scorecards AND visitors AND DNS)
+    // Get all scorecards with member names (exclude empty/reset scorecards AND visitors)
     const scorecardsResult = await db.execute({
       sql: `SELECT sc.*, m.name, m.handicap
             FROM scorecards sc
             JOIN members m ON sc.member_id = m.id
             WHERE sc.event_id = ? AND sc.total_points > 0 
-              AND (m.member_type IS NULL OR m.member_type != 'visitor')
-              AND (sc.dns IS NULL OR sc.dns = 0)`,
+              AND (m.member_type IS NULL OR m.member_type != 'visitor')`,
       args: [id]
     });
 
@@ -108,13 +107,17 @@ export async function GET(
     if (calculatedPrizes.length === 0 && scorecardsResult.rows.length > 0) {
       // Get countback scores for all scorecards
       const scorecardsWithCountback = await Promise.all(
-        scorecardsResult.rows.map(async (row) => {
-          const nameLower = ((row.name as string) || '').trim().toLowerCase();
-          const surname = ((row.name as string) || '').trim().split(' ').slice(-1)[0].toLowerCase();
+        scorecardsResult.rows.map(async (rawRow) => {
+          const row = rawRow as unknown as {
+            id: string; name: string; handicap: number; member_type: string;
+            total_points: number; total_gross: number;
+          };
+          const nameLower = (row.name || '').trim().toLowerCase();
+          const surname = (row.name || '').trim().split(' ').slice(-1)[0].toLowerCase();
           const deduction = deductionMap.get(nameLower) || deductionMap.get(surname) || 0;
-          const rawPts = (row.total_points as number) || 0;
+          const rawPts = row.total_points || 0;
           const netPts = rawPts + deduction;
-          const countback = await getCountbackScores(db, row.id as string);
+          const countback = await getCountbackScores(db, row.id);
           return { ...row, netPts, deduction, rawPts, ...countback };
         })
       );
@@ -128,7 +131,7 @@ export async function GET(
         // 3. Back 6 countback (higher is better)
         if (b.back6 !== a.back6) return b.back6 - a.back6;
         // 4. Gross score (lower is better)
-        return (a.total_gross as number) - (b.total_gross as number);
+        return (a.total_gross || 0) - (b.total_gross || 0);
       });
       
       // Top 3 overall
@@ -266,8 +269,8 @@ export async function GET(
     };
     
     calculatedPrizes.sort((a, b) => {
-      const orderA = prizeOrder[a.prize_type] || 99;
-      const orderB = prizeOrder[b.prize_type] || 99;
+      const orderA = prizeOrder[String(a.prize_type)] || 99;
+      const orderB = prizeOrder[String(b.prize_type)] || 99;
       
       // Special handling for class prizes: interleave by position first, then by class
       const isClassA = a.prize_type === 'class_1' || a.prize_type === 'class_2';
@@ -275,14 +278,14 @@ export async function GET(
       
       if (isClassA && isClassB) {
         // Both are class prizes - sort by position first (1st place winners, then 2nd place winners)
-        if (a.position !== b.position) return (a.position || 0) - (b.position || 0);
+        if (a.position !== b.position) return (Number(a.position) || 0) - (Number(b.position) || 0);
         // Within same position, class_1 comes before class_2
         return a.prize_type === 'class_1' ? -1 : 1;
       }
       
       if (orderA !== orderB) return orderA - orderB;
       // Within same type, sort by position
-      if (a.position && b.position) return a.position - b.position;
+      if (a.position && b.position) return Number(a.position) - Number(b.position);
       return 0;
     });
 
@@ -325,7 +328,7 @@ export async function GET(
         // 3. Back 6 countback (higher is better)
         if (b.back6 !== a.back6) return b.back6 - a.back6;
         // 4. Gross score (lower is better)
-        return a.total_gross - b.total_gross;
+        return (Number(a.total_gross) || 0) - (Number(b.total_gross) || 0);
       })),
       prizes: calculatedPrizes,
       sideComps: sideCompsResult.rows.map(row => ({

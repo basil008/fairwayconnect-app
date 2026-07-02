@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import Database from 'better-sqlite3';
 
 export async function GET(request: Request) {
   try {

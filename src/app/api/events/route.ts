@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     console.log(`✅ Found event: ${event.name}`);
 
     // Try to get course holes (may not exist in migrated data)
-    let holes = [];
+    let holes: unknown[] = [];
     try {
       const holesResult = await db.execute({ sql: 'SELECT * FROM course_holes WHERE event_id = ? ORDER BY hole_number', args: [event.id as string] });
       holes = holesResult.rows;
@@ -55,7 +55,7 @@ export async function GET(request: Request) {
     }
 
     // Try to get RSVP counts (may not exist in migrated data)
-    let rsvpCounts = [];
+    let rsvpCounts: unknown[] = [];
     let confirmedCount = 0;
     try {
       const rsvpCountsResult = await db.execute({

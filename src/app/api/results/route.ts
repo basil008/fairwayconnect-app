@@ -8,8 +8,8 @@ export async function GET() {
     console.log('📊 Results API - 100% Mac Mini Match');
     const db = getDb();
 
-    // Get the most recent finalised AND published event
-    const eventResult = await db.execute("SELECT * FROM events WHERE status = 'finalised' AND results_published = 1 ORDER BY date DESC LIMIT 1");
+    // Get the most recent finalised event (Hollywood Lakes)
+    const eventResult = await db.execute("SELECT * FROM events WHERE status = 'finalised' ORDER BY date DESC LIMIT 1");
     const event = eventResult.rows[0];
     
     if (!event) {

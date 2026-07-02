@@ -1,18 +1,21 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { getSessionFromRequest } from '@/lib/session';
 
-export async function GET() {
+// Columns safe for any visitor. PINs, tokens, and contact details are admin-only.
+const PUBLIC_COLUMNS = 'id, name, handicap, member_type, status, handicap_updated_at';
+const ADMIN_COLUMNS = PUBLIC_COLUMNS + ', email, phone, member_pin, last_login_at, login_count, joined_date';
+
+export async function GET(req: NextRequest) {
   try {
-    console.log('🔍 Members API called');
     const db = getDb();
-    
-    // Get all members with proper error handling
+    const session = await getSessionFromRequest(req);
+    const columns = session?.role === 'admin' ? ADMIN_COLUMNS : PUBLIC_COLUMNS;
+
     const membersResult = await db.execute({
-      sql: 'SELECT * FROM members WHERE status = ? ORDER BY name',
+      sql: `SELECT ${columns} FROM members WHERE status = ? ORDER BY name`,
       args: ['active']
     });
-    
-    console.log(`✅ Found ${membersResult.rows.length} active members`);
     
     // Sort by surname (last word of name) for proper ALGS display
     const members = membersResult.rows.sort((a, b) => {
@@ -25,7 +28,6 @@ export async function GET() {
       return surnameA.localeCompare(surnameB);
     });
     
-    console.log(`📊 Returning ${members.length} sorted members`);
     return NextResponse.json(members);
     
   } catch (error) {

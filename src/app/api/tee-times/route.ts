@@ -1,9 +1,7 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { seedDatabase } from '@/lib/seed';
 
 export async function GET(request: Request) {
-  await seedDatabase();
   const db = getDb();
   const url = new URL(request.url);
   
