@@ -23,7 +23,7 @@ export async function GET() {
       FROM members m
       LEFT JOIN scorecards s ON m.id = s.member_id
       LEFT JOIN member_deductions d ON m.name LIKE '%' || d.member_name || '%' AND d.year = 2026
-      WHERE m.status = 'active' AND (m.member_type IS NULL OR m.member_type != 'visitor')
+      WHERE m.status = 'active'
       GROUP BY m.id, m.name, m.handicap, d.year_starting_deduction
       ORDER BY (total_points + COALESCE(d.year_starting_deduction, 0)) DESC, best_gross ASC
     `;
@@ -69,61 +69,9 @@ export async function GET() {
       console.log('📊 No scores yet - showing all members with 0 points');
     }
 
-    // Get last finalised event with prizes for member home page
-    const lastEventResult = await db.execute("SELECT * FROM events WHERE status = 'finalised' ORDER BY date DESC LIMIT 1");
-    const lastEvent = lastEventResult.rows[0];
-    
-    let lastEventData = null;
-    if (lastEvent) {
-      const prizesResult = await db.execute({
-        sql: `SELECT pa.*, m.name, m.handicap FROM prize_allocations pa JOIN members m ON m.id = pa.member_id WHERE pa.event_id = ? ORDER BY id`,
-        args: [lastEvent.id]
-      });
-      
-      const prizes = prizesResult.rows as any[];
-      const top3 = prizes.filter(p => p.prize_type === 'overall' && p.position <= 3).sort((a, b) => a.position - b.position);
-      const class1 = prizes.filter(p => p.prize_type === 'class_1').sort((a, b) => a.position - b.position);
-      const class2 = prizes.filter(p => p.prize_type === 'class_2').sort((a, b) => a.position - b.position);
-      const front9 = prizes.find(p => p.prize_type === 'front_9');
-      const back9 = prizes.find(p => p.prize_type === 'back_9');
-      
-      // Extract points from label (e.g., "John Scully (40 pts)")
-      const extractPoints = (label: string) => {
-        const match = label.match(/\((\d+)\s*pts?\)/);
-        return match ? parseInt(match[1]) : 0;
-      };
-      
-      lastEventData = {
-        event_name: lastEvent.name,
-        event_date: lastEvent.date,
-        leaderboard: top3.map((p: any) => ({
-          name: p.name,
-          total_points: extractPoints(p.label),
-          position: p.position,
-          handicap: p.handicap
-        })),
-        class1_winners: class1.map((p: any) => ({
-          name: p.name,
-          points: extractPoints(p.label),
-          position: p.position,
-          handicap: p.handicap
-        })),
-        class2_winners: class2.map((p: any) => ({
-          name: p.name,
-          points: extractPoints(p.label),
-          position: p.position,
-          handicap: p.handicap
-        })),
-        front9_winner: front9 ? { name: front9.name, handicap: front9.handicap, points: extractPoints(front9.label) } : null,
-        back9_winner: back9 ? { name: back9.name, handicap: back9.handicap, points: extractPoints(back9.label) } : null,
-      };
-    }
-
     return NextResponse.json({
       leaderboard,
-      season,
-      finalised: !!lastEvent,
-      ...lastEventData
+      season
     });
 
   } catch (error) {

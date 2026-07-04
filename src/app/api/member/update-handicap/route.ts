@@ -1,23 +1,12 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import { getSessionFromRequest } from '@/lib/session';
 
 export async function POST(request: Request) {
   const db = getDb();
   
   try {
     const body = await request.json();
-    const { newHandicap, confirmed } = body;
-
-    // SECURITY: identity comes from the signed session, never the request body.
-    // Admins may act on behalf of a member by passing memberId explicitly.
-    const session = await getSessionFromRequest(request);
-    if (!session) {
-      return NextResponse.json({ error: 'Sign in with your PIN first' }, { status: 401 });
-    }
-    const memberId = session.role === 'admin' && body.memberId
-      ? String(body.memberId)
-      : session.memberId;
+    const { memberId, newHandicap, confirmed } = body;
 
     if (!memberId) {
       return NextResponse.json({ error: 'Member ID required' }, { status: 400 });

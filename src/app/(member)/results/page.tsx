@@ -58,6 +58,14 @@ export default function ResultsPage() {
     );
   }
 
+  const overallPrizes = prizes.filter(p => ['overall','class_1','class_2'].includes(p.prize_type));
+  const front9Prizes = prizes.filter(p => p.prize_type.includes('front_9'));
+  const back9Prizes = prizes.filter(p => p.prize_type.includes('back_9'));
+  const ntpPrizes = prizes.filter(p => p.prize_type === 'ntp');
+  const ldPrizes = prizes.filter(p => p.prize_type === 'longest_drive');
+  const twosPrizes = prizes.filter(p => p.prize_type === 'twos');
+  const divisionPrizes = prizes.filter(p => ['division_a', 'division_b', 'best_visitor'].includes(p.prize_type));
+
   return (
     <div className="px-4 pt-6 pb-24">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">{eventName}</h1>
@@ -65,17 +73,85 @@ export default function ResultsPage() {
         📍 {courseName} · {new Date(eventDate + 'T12:00:00').toLocaleDateString('en-IE', { day: 'numeric', month: 'long' })}
       </p>
 
-      {/* All Prizes in Order */}
-      <div className="space-y-2 mb-4">
-        {prizes.map((p, i) => (
-          <div key={i} className={`bg-white rounded-xl p-4 shadow-sm ${
-            p.prize_type === 'overall' && p.position === 1 ? 'ring-2 ring-yellow-400' : ''
-          }`}>
-            <p className="font-bold text-gray-900">{p.label}</p>
-            {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
-          </div>
-        ))}
-      </div>
+      {/* Overall */}
+      {overallPrizes.length > 0 && (
+        <div className="space-y-3 mb-4">
+          {overallPrizes.map((p, i) => (
+            <div key={i} className={`bg-white rounded-2xl p-4 shadow-sm ${i === 0 ? 'ring-2 ring-yellow-400' : ''}`}>
+              <p className="text-lg font-bold text-gray-900">{p.label}</p>
+              {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Front 9 */}
+      {front9Prizes.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {front9Prizes.map((p, i) => (
+            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+              <p className="text-sm font-bold text-gray-900">{p.label}</p>
+              {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Back 9 */}
+      {back9Prizes.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {back9Prizes.map((p, i) => (
+            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+              <p className="text-sm font-bold text-gray-900">{p.label}</p>
+              {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* NTP */}
+      {ntpPrizes.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {ntpPrizes.map((p, i) => (
+            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+              <p className="text-sm font-bold text-gray-900">{p.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Longest Drive */}
+      {ldPrizes.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {ldPrizes.map((p, i) => (
+            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+              <p className="text-sm font-bold text-gray-900">{p.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Twos */}
+      {twosPrizes.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {twosPrizes.map((p, i) => (
+            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+              <p className="text-sm font-bold text-gray-900">{p.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
+
+      {/* Division prizes */}
+      {divisionPrizes.length > 0 && (
+        <div className="space-y-2 mb-4">
+          {divisionPrizes.map((p, i) => (
+            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+              <p className="text-sm font-bold text-gray-900">{p.label}</p>
+            </div>
+          ))}
+        </div>
+      )}
 
       <button onClick={shareWhatsApp}
         className="w-full bg-green-600 text-white rounded-2xl py-3 font-bold text-sm mt-4">

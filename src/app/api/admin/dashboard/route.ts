@@ -65,7 +65,7 @@ export async function GET() {
                   FROM rsvps
                   WHERE event_id = ?
                   GROUP BY status`,
-            args: [currentEvent.id as string]
+            args: [currentEvent.id]
           });
           
           let confirmedCount = 0;
@@ -102,35 +102,96 @@ export async function GET() {
     // Basic revenue calculation (simplified)
     const revenue = { collected: 0, outstanding: 0 };
 
-    // GOTY leader - query with gross tiebreaker (matches /api/goty logic)
+    // GOTY leader - replicate the logic from /api/goty for consistency
     let oomLeader = null;
     try {
-      const gotyResult = await db.execute({
-        sql: `SELECT 
-                m.name,
-                SUM(sc.total_points) as total_points,
-                MIN(sc.total_gross) as best_gross,
-                COUNT(DISTINCT sc.event_id) as events_played
-              FROM scorecards sc
-              JOIN members m ON sc.member_id = m.id
-              JOIN events e ON sc.event_id = e.id
-              WHERE e.status = 'finalised' AND sc.total_points > 0
-              GROUP BY sc.member_id
-              ORDER BY total_points DESC, best_gross ASC
-              LIMIT 1`,
-        args: []
-      });
+      const currentYear = new Date().getFullYear().toString();
       
-      if (gotyResult.rows && gotyResult.rows.length > 0) {
-        const leader: any = gotyResult.rows[0];
-        oomLeader = {
-          name: leader.name,
-          total_points: leader.total_points || 0,
-          events_played: leader.events_played || 0
+      // Get all scorecards for finalized events in current season
+      const scorecardsResult = await db.execute({
+        sql: `
+          SELECT 
+            s.member_id,
+            m.name,
+            s.total_points,
+            s.total_gross
+          FROM scorecards s
+          JOIN members m ON s.member_id = m.id
+          JOIN events e ON s.event_id = e.id
+          WHERE e.status = 'finalised' 
+            AND strftime('%Y', e.date) = ?
+          ORDER BY m.name
+        `,
+        args: [currentYear]
+      });
+
+      // Get season config for best_of_x
+      const seasonResult = await db.execute({
+        sql: `SELECT best_of_x FROM seasons WHERE year = ?`,
+        args: [parseInt(currentYear)]
+      });
+      const best_of_x = (seasonResult.rows[0] as any)?.best_of_x || 6;
+
+      // Group by member and calculate totals
+      const memberMap = new Map();
+      
+      for (const row of scorecardsResult.rows) {
+        if (!memberMap.has(row.member_id)) {
+          memberMap.set(row.member_id, {
+            member_id: row.member_id,
+            name: row.name,
+            events: [],
+            events_played: 0
+          });
+        }
+        
+        const member = memberMap.get(row.member_id);
+        member.events.push({
+          points: row.total_points,
+          gross: row.total_gross
+        });
+        member.events_played++;
+      }
+
+      // Calculate standings
+      const standings = Array.from(memberMap.values()).map(member => {
+        // Sort events by points DESC
+        member.events.sort((a: any, b: any) => b.points - a.points);
+        
+        // Sum top N events (best_of_x)
+        const countingCount = Math.min(best_of_x, member.events.length);
+        const total_points = member.events
+          .slice(0, countingCount)
+          .reduce((sum: number, e: any) => sum + e.points, 0);
+        
+        const best_gross = member.events.length > 0
+          ? Math.min(...member.events.map((e: any) => e.gross))
+          : 999;
+
+        return {
+          name: member.name,
+          total_points,
+          best_gross,
+          events_played: member.events_played
         };
+      });
+
+      // Sort by total_points DESC, then best_gross ASC (tiebreaker)
+      standings.sort((a, b) => {
+        if (b.total_points !== a.total_points) return b.total_points - a.total_points;
+        return a.best_gross - b.best_gross;
+      });
+
+      if (standings.length > 0) {
+        oomLeader = {
+          name: standings[0].name,
+          total_points: standings[0].total_points,
+          events_played: standings[0].events_played
+        };
+        console.log(`🏆 GOTY Leader: ${standings[0].name} (${standings[0].total_points} pts, ${standings[0].events_played} events)`);
       }
     } catch (error) {
-      console.log('ℹ️ Could not fetch GOTY leader');
+      console.error('ℹ️ Could not calculate GOTY leader:', error);
     }
 
     // Basic alerts

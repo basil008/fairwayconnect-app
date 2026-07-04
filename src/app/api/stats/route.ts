@@ -1,9 +1,11 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { seedDatabase } from '@/lib/seed';
 
 export const dynamic = 'force-dynamic';
 
 export async function GET() {
+  await seedDatabase();
   const db = getDb();
 
   const totalMembersResult = await db.execute("SELECT COUNT(*) as c FROM members WHERE member_type = 'member'");

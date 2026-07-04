@@ -21,7 +21,7 @@ export async function GET(request: Request) {
 
     sql += ` ORDER BY hsl.sync_date DESC LIMIT 100`;
 
-    const result = await db.execute(sql);
+    const result = await db.execute({ sql });
 
     return NextResponse.json({
       changes: result.rows

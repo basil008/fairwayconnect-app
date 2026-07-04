@@ -241,24 +241,114 @@ export default function EventResultsPage({ params }: { params: Promise<{ id: str
       )}
 
       {/* Prizes Tab */}
-      {tab === 'prizes' && data.prizes && data.prizes.length > 0 && (
-        <div className="space-y-2">
-          {data.prizes.map((p, i) => (
-            <div key={i} className={`bg-white rounded-xl p-4 shadow-sm ${
-              p.prize_type === 'overall' && p.position === 1 ? 'ring-2 ring-yellow-400' : ''
-            }`}>
-              <p className="font-bold text-gray-900">{p.label}</p>
-              {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
+      {tab === 'prizes' && (
+        <div className="space-y-4">
+          {/* Overall Winners */}
+          {overallPrizes.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">🏆 Overall</h3>
+              <div className="space-y-2">
+                {overallPrizes.map((p, i) => (
+                  <div key={i} className={`bg-white rounded-xl p-4 shadow-sm ${i === 0 ? 'ring-2 ring-yellow-400' : ''}`}>
+                    <p className="font-bold text-gray-900">{p.label}</p>
+                    {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
+                  </div>
+                ))}
+              </div>
             </div>
-          ))}
-        </div>
-      )}
+          )}
 
-      {/* Prizes Tab - No prizes published yet */}
-      {tab === 'prizes' && (!data.prizes || data.prizes.length === 0) && (
-        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-          <span className="text-4xl mb-3 block">🏆</span>
-          <p className="text-gray-500">No prizes awarded yet</p>
+          {/* Front 9 */}
+          {front9Prizes.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">⛳ Front 9</h3>
+              <div className="space-y-2">
+                {front9Prizes.map((p, i) => (
+                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                    <p className="text-sm font-bold text-gray-900">{p.label}</p>
+                    {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Back 9 */}
+          {back9Prizes.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">⛳ Back 9</h3>
+              <div className="space-y-2">
+                {back9Prizes.map((p, i) => (
+                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                    <p className="text-sm font-bold text-gray-900">{p.label}</p>
+                    {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Division Prizes */}
+          {divisionPrizes.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">📊 Divisions</h3>
+              <div className="space-y-2">
+                {divisionPrizes.map((p, i) => (
+                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                    <p className="text-sm font-bold text-gray-900">{p.label}</p>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* NTP */}
+          {ntpComps.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">🎯 Nearest the Pin</h3>
+              <div className="space-y-2">
+                {ntpComps.map((s, i) => (
+                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                    <span className="text-sm">Hole {s.hole_number}: <span className="font-bold">{s.member_name}</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* Longest Drive */}
+          {ldComps.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">💥 Longest Drive</h3>
+              <div className="space-y-2">
+                {ldComps.map((s, i) => (
+                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                    <span className="text-sm">Hole {s.hole_number}: <span className="font-bold">{s.member_name}</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {twosComps.length > 0 && (
+            <div>
+              <h3 className="text-sm font-bold text-gray-700 mb-2">🏆 Twos</h3>
+              <div className="space-y-2">
+                {twosComps.map((s, i) => (
+                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
+                    <span className="text-sm">Hole {s.hole_number}: <span className="font-bold">{s.member_name}</span></span>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {prizes.length === 0 && sideComps.length === 0 && (
+            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+              <span className="text-4xl mb-3 block">🏆</span>
+              <p className="text-gray-500">No prizes awarded yet</p>
+            </div>
+          )}
         </div>
       )}
 

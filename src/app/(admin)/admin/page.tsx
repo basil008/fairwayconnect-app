@@ -10,11 +10,10 @@ export default function AdminPinPage() {
   const router = useRouter();
 
   useEffect(() => {
-    // If a valid admin session cookie exists, go straight to the dashboard
-    fetch('/api/auth/session')
-      .then(r => r.json())
-      .then(s => { if (s.authenticated && s.role === 'admin') router.replace('/admin/dashboard'); })
-      .catch(() => {});
+    // If already authenticated, go to dashboard
+    if (sessionStorage.getItem('admin_auth') === 'true') {
+      router.replace('/admin/dashboard');
+    }
   }, [router]);
 
   const handleDigit = (digit: string) => {
@@ -38,7 +37,7 @@ export default function AdminPinPage() {
       });
       const data = await res.json();
       if (data.success) {
-        // Session cookie is set by the server (HttpOnly)
+        sessionStorage.setItem('admin_auth', 'true');
         router.replace('/admin/dashboard');
       } else {
         setError(true);

@@ -1,34 +1,6 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
-// Helper function to calculate countback scores
-// ALGS Standard: Back 9 → Back 6 → Gross Score
-async function getCountbackScores(db: any, scorecardId: string) {
-  try {
-    const holesResult = await db.execute({
-      sql: `SELECT hole_number, stableford_points FROM hole_scores WHERE scorecard_id = ? ORDER BY hole_number`,
-      args: [scorecardId]
-    });
-    
-    const holes = holesResult.rows as Array<{ hole_number: number; stableford_points: number }>;
-    
-    // Calculate back 9 (holes 10-18)
-    const back9 = holes
-      .filter(h => h.hole_number >= 10 && h.hole_number <= 18)
-      .reduce((sum, h) => sum + (h.stableford_points || 0), 0);
-    
-    // Calculate back 6 (holes 13-18)
-    const back6 = holes
-      .filter(h => h.hole_number >= 13 && h.hole_number <= 18)
-      .reduce((sum, h) => sum + (h.stableford_points || 0), 0);
-    
-    return { back9, back6 };
-  } catch (err) {
-    console.error('Countback calculation error for scorecard', scorecardId, ':', err);
-    return { back9: 0, back6: 0 }; // Return zeros if calculation fails
-  }
-}
-
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -52,13 +24,12 @@ export async function GET(
 
     const event = eventResult.rows[0];
 
-    // Get all scorecards with member names (exclude empty/reset scorecards AND visitors)
+    // Get all scorecards with member names (exclude empty/reset scorecards)
     const scorecardsResult = await db.execute({
       sql: `SELECT sc.*, m.name, m.handicap
             FROM scorecards sc
             JOIN members m ON sc.member_id = m.id
-            WHERE sc.event_id = ? AND sc.total_points > 0 
-              AND (m.member_type IS NULL OR m.member_type != 'visitor')`,
+            WHERE sc.event_id = ? AND sc.total_points > 0`,
       args: [id]
     });
 
@@ -105,34 +76,20 @@ export async function GET(
     
     // If no prizes allocated, auto-calculate from scorecards
     if (calculatedPrizes.length === 0 && scorecardsResult.rows.length > 0) {
-      // Get countback scores for all scorecards
-      const scorecardsWithCountback = await Promise.all(
-        scorecardsResult.rows.map(async (rawRow) => {
-          const row = rawRow as unknown as {
-            id: string; name: string; handicap: number; member_type: string;
-            total_points: number; total_gross: number;
-          };
-          const nameLower = (row.name || '').trim().toLowerCase();
-          const surname = (row.name || '').trim().split(' ').slice(-1)[0].toLowerCase();
+      // Sort by adjusted points (with deductions) then gross
+      const sorted = [...scorecardsResult.rows]
+        .map(row => {
+          const nameLower = ((row.name as string) || '').trim().toLowerCase();
+          const surname = ((row.name as string) || '').trim().split(' ').slice(-1)[0].toLowerCase();
           const deduction = deductionMap.get(nameLower) || deductionMap.get(surname) || 0;
-          const rawPts = row.total_points || 0;
+          const rawPts = (row.total_points as number) || 0;
           const netPts = rawPts + deduction;
-          const countback = await getCountbackScores(db, row.id);
-          return { ...row, netPts, deduction, rawPts, ...countback };
+          return { ...row, netPts, deduction, rawPts };
         })
-      );
-      
-      // Sort by: 1) points, 2) back 9, 3) back 6, 4) gross score (lower is better)
-      const sorted = scorecardsWithCountback.sort((a, b) => {
-        // 1. Points (higher is better)
-        if (b.netPts !== a.netPts) return b.netPts - a.netPts;
-        // 2. Back 9 countback (higher is better)
-        if (b.back9 !== a.back9) return b.back9 - a.back9;
-        // 3. Back 6 countback (higher is better)
-        if (b.back6 !== a.back6) return b.back6 - a.back6;
-        // 4. Gross score (lower is better)
-        return (a.total_gross || 0) - (b.total_gross || 0);
-      });
+        .sort((a, b) => {
+          if (b.netPts !== a.netPts) return b.netPts - a.netPts;
+          return (a.total_gross as number) - (b.total_gross as number);
+        });
       
       // Top 3 overall
       if (sorted.length >= 1) {
@@ -253,42 +210,6 @@ export async function GET(
       }
     }
 
-    // Sort prizes in display order: 1st, 2nd, Class1, Class2, 3rd, Past Captain's, Visitors, NTP, Longest Drive, Twos
-    const prizeOrder: Record<string, number> = {
-      'overall': 1,
-      'class_1': 2,
-      'class_2': 3,
-      'third_overall': 4,
-      'past_captains': 5,
-      'visitors': 6,
-      'ntp': 7,
-      'longest_drive': 8,
-      'twos': 9,
-      'front_9': 10,
-      'back_9': 11
-    };
-    
-    calculatedPrizes.sort((a, b) => {
-      const orderA = prizeOrder[String(a.prize_type)] || 99;
-      const orderB = prizeOrder[String(b.prize_type)] || 99;
-      
-      // Special handling for class prizes: interleave by position first, then by class
-      const isClassA = a.prize_type === 'class_1' || a.prize_type === 'class_2';
-      const isClassB = b.prize_type === 'class_1' || b.prize_type === 'class_2';
-      
-      if (isClassA && isClassB) {
-        // Both are class prizes - sort by position first (1st place winners, then 2nd place winners)
-        if (a.position !== b.position) return (Number(a.position) || 0) - (Number(b.position) || 0);
-        // Within same position, class_1 comes before class_2
-        return a.prize_type === 'class_1' ? -1 : 1;
-      }
-      
-      if (orderA !== orderB) return orderA - orderB;
-      // Within same type, sort by position
-      if (a.position && b.position) return Number(a.position) - Number(b.position);
-      return 0;
-    });
-
     return NextResponse.json({
       event: {
         id: event.id,
@@ -298,38 +219,24 @@ export async function GET(
         format: event.format,
         status: event.status,
       },
-      scorecards: await Promise.all(
-        scorecardsResult.rows.map(async (row) => {
-          const nameLower = ((row.name as string) || '').trim().toLowerCase();
-          const surname = ((row.name as string) || '').trim().split(' ').slice(-1)[0].toLowerCase();
-          const deduction = deductionMap.get(nameLower) || 0;
-          const rawPts = (row.total_points as number) || 0;
-          const adjustedPts = rawPts + deduction; // For event prizes only
-          const countback = await getCountbackScores(db, row.id as string);
-          return {
-            member_id: row.member_id,
-            name: row.name,
-            handicap: row.handicap,
-            total_points: adjustedPts, // Event ranking uses adjusted
-            raw_points: rawPts, // GOTY uses raw
-            deduction,
-            total_gross: row.total_gross || 0,
-            holes_completed: row.holes_completed || 0,
-            status: row.status,
-            back9: countback.back9,
-            back6: countback.back6,
-          };
-        })
-      ).then(cards => cards.sort((a, b) => {
-        // 1. Points (higher is better)
-        if (b.total_points !== a.total_points) return b.total_points - a.total_points;
-        // 2. Back 9 countback (higher is better)
-        if (b.back9 !== a.back9) return b.back9 - a.back9;
-        // 3. Back 6 countback (higher is better)
-        if (b.back6 !== a.back6) return b.back6 - a.back6;
-        // 4. Gross score (lower is better)
-        return (Number(a.total_gross) || 0) - (Number(b.total_gross) || 0);
-      })),
+      scorecards: scorecardsResult.rows.map(row => {
+        const nameLower = ((row.name as string) || '').trim().toLowerCase();
+        const surname = ((row.name as string) || '').trim().split(' ').slice(-1)[0].toLowerCase();
+        const deduction = deductionMap.get(nameLower) || 0;
+        const rawPts = (row.total_points as number) || 0;
+        const adjustedPts = rawPts + deduction; // For event prizes only
+        return {
+          member_id: row.member_id,
+          name: row.name,
+          handicap: row.handicap,
+          total_points: adjustedPts, // Event ranking uses adjusted
+          raw_points: rawPts, // GOTY uses raw
+          deduction,
+          total_gross: row.total_gross || 0,
+          holes_completed: row.holes_completed || 0,
+          status: row.status,
+        };
+      }).sort((a, b) => (b.total_points as number) - (a.total_points as number)),
       prizes: calculatedPrizes,
       sideComps: sideCompsResult.rows.map(row => ({
         type: row.type,
@@ -340,13 +247,7 @@ export async function GET(
       })),
     });
   } catch (error) {
-    console.error('❌ Error fetching event results:', error);
-    const errorMessage = error instanceof Error ? error.message : String(error);
-    const errorStack = error instanceof Error ? error.stack : undefined;
-    console.error('Error details:', { message: errorMessage, stack: errorStack });
-    return NextResponse.json({ 
-      error: 'Failed to fetch results',
-      details: errorMessage 
-    }, { status: 500 });
+    console.error('Error fetching event results:', error);
+    return NextResponse.json({ error: 'Failed to fetch results' }, { status: 500 });
   }
 }

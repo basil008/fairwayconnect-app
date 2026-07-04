@@ -184,18 +184,10 @@ export default function MemberHome() {
             hole_number: sc.hole_number
           })) || [];
         
-        // Get top 2 from published prizes (respects Captain's Prize special rules)
-        const overallPrizes = results.prizes?.filter((p: any) => p.prize_type === 'overall') || [];
-        const leaderboard = overallPrizes.length >= 2 ? overallPrizes.slice(0, 2).map((p: any) => ({
-          name: p.member_name,
-          total_points: p.label?.match(/(\d+) pts/)?.[1] || 0,
-          handicap: results.scorecards?.find((sc: any) => sc.name === p.member_name)?.handicap || 0
-        })) : results.scorecards?.slice(0, 2) || [];
-        
         setLastEventData({
           event_name: lastEvent.course_name,
           event_date: lastEvent.date,
-          leaderboard,
+          leaderboard: results.scorecards?.slice(0, 4) || [],
           front9_winner: results.prizes?.find((p: any) => p.prize_type === 'front_9'),
           back9_winner: results.prizes?.find((p: any) => p.prize_type === 'back_9'),
           twos_winners: twosWinners
@@ -492,7 +484,7 @@ export default function MemberHome() {
                   <span className="text-sm font-medium text-gray-600 mr-3">
                     {index === 0 ? '1st' : index === 1 ? '2nd' : '3rd'}
                   </span>
-                  <span className="text-sm font-bold text-gray-900">{(player as {member_name?: string; name?: string}).member_name || player.name}</span>
+                  <span className="text-sm font-bold text-gray-900">{player.member_name || player.name}</span>
                 </div>
                 <div className="flex items-center">
                   <span className="text-xs text-gray-500 mr-2">({player.handicap})</span>
@@ -506,15 +498,15 @@ export default function MemberHome() {
               {lastEventData.front9_winner && (
                 <div>
                   <p className="text-gray-600 font-medium">Front 9</p>
-                  <p className="font-bold text-gray-900">{(lastEventData.front9_winner as {member_name?: string}).member_name}</p>
-                  <p className="text-gray-500">{((lastEventData.front9_winner as {label?: string}).label || '').match(/\d+ pts/)?.[0] || ''}</p>
+                  <p className="font-bold text-gray-900">{lastEventData.front9_winner.member_name}</p>
+                  <p className="text-gray-500">{lastEventData.front9_winner.label?.match(/\d+ pts/)?.[0] || ''}</p>
                 </div>
               )}
               {lastEventData.back9_winner && (
                 <div>
                   <p className="text-gray-600 font-medium">Back 9</p>
-                  <p className="font-bold text-gray-900">{(lastEventData.back9_winner as {member_name?: string}).member_name}</p>
-                  <p className="text-gray-500">{((lastEventData.back9_winner as {label?: string}).label || '').match(/\d+ pts/)?.[0] || ''}</p>
+                  <p className="font-bold text-gray-900">{lastEventData.back9_winner.member_name}</p>
+                  <p className="text-gray-500">{lastEventData.back9_winner.label?.match(/\d+ pts/)?.[0] || ''}</p>
                 </div>
               )}
             </div>

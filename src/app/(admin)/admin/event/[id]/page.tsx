@@ -3,8 +3,7 @@
 import { useEffect, useState, use } from 'react';
 import Link from 'next/link';
 import { useAdminAuth, AdminHeader } from '@/components/AdminAuth';
-import StaleHandicapWarning from '@/components/StaleHandicapWarning';
-type Tab = 'details' | 'players' | 'teetimes' | 'payments' | 'prizes' | 'scorecards' | 'sidecomps' | 'results';
+type Tab = 'details' | 'players' | 'teetimes' | 'payments' | 'scorecards' | 'sidecomps' | 'results';
 
 interface EventData {
   event: Record<string, unknown>;
@@ -23,7 +22,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
   const [tab, setTab] = useState<Tab>('details');
   const [loading, setLoading] = useState(true);
   const [saving, setSaving] = useState(false);
-  const [results, setResults] = useState<any>(null);
 
   // Detail editing
   const [editForm, setEditForm] = useState<Record<string, unknown>>({});
@@ -38,27 +36,14 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
   const [ldHole, setLdHole] = useState(0);
   const [ldMemberId, setLdMemberId] = useState('');
   const [ldSearch, setLdSearch] = useState('');
-
-  // Stale handicap warning
-  const [showStaleWarning, setShowStaleWarning] = useState(false);
-  const [staleMembers, setStaleMembers] = useState<any[]>([]);
-  const [pendingScoreOpen, setPendingScoreOpen] = useState(false);
   const [twosHole, setTwosHole] = useState(0);
   const [twosMemberId, setTwosMemberId] = useState('');
   const [twosSearch, setTwosSearch] = useState('');
-  const [visitorName, setVisitorName] = useState('');
-  const [visitorHandicap, setVisitorHandicap] = useState('');
-  const [visitorPoints, setVisitorPoints] = useState('');
 
   // Score entry state
   const [scoreEntryPlayer, setScoreEntryPlayer] = useState<{ member_id: string; name: string; handicap: number } | null>(null);
   const [holeScores, setHoleScores] = useState<number[]>(Array(18).fill(0));
   const [savingScores, setSavingScores] = useState(false);
-
-  // Quick handicap edit state
-  const [editingHandicap, setEditingHandicap] = useState<{ member_id: string; name: string; current_handicap: number } | null>(null);
-  const [newHandicap, setNewHandicap] = useState<string>('');
-  const [savingHandicap, setSavingHandicap] = useState(false);
 
   // Tee time editing state
   const [movingPlayer, setMovingPlayer] = useState<{ memberId: string; name: string; fromGroup: number } | null>(null);
@@ -79,31 +64,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
   interface Course { id: string; name: string; location: string; tees: CourseTee[]; }
   const [courses, setCourses] = useState<Course[]>([]);
   const [selectedCourseId, setSelectedCourseId] = useState<string>('');
-
-  // Prize configuration state
-  const [manualPrizes, setManualPrizes] = useState(false);
-  const [prizeConfig, setPrizeConfig] = useState({
-    first: 80,
-    second: 60,
-    third: 40,
-    front9: 25,
-    back9: 25,
-    twos: 0,
-    visitor: 0,
-    class1_first: 40,
-    class1_second: 30,
-    class2_first: 40,
-    class2_second: 30,
-    longest_drive: 20,
-    nearest_pin: 20
-  });
-  const [savingPrizes, setSavingPrizes] = useState(false);
-  const [recalculating, setRecalculating] = useState(false);
-
-  // Scorecard loading state
-  const [loadingScorecard, setLoadingScorecard] = useState(false);
-  const [scorecardMessage, setScorecardMessage] = useState<{type: 'success' | 'error' | 'info'; text: string} | null>(null);
-  const [scorecardMetadataLocked, setScorecardMetadataLocked] = useState(false);
 
   // Load courses
   useEffect(() => {
@@ -140,52 +100,16 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
     const cr = Number(editForm.course_rating) || 72;
     const par = Number(editForm.course_par) || 72;
     const allowance = Number(editForm.handicap_allowance) || 0.95;
-    // CORRECT: Apply allowance BEFORE rounding
-    const courseHC = (index * slope / 113) + (cr - par);
+    const courseHC = Math.round((index * slope / 113) + (cr - par));
     return Math.round(courseHC * allowance);
   };
 
-  const loadData = async () => {
-    try {
-      const r = await fetch(`/api/admin/events/${id}`);
-      const d = await r.json();
-      console.log('📊 Event data loaded:', {
-        total_rsvps: d.rsvps?.length || 0,
-        rsvp_names: d.rsvps?.map((r: any) => r.name).sort(),
-        has_terry: d.rsvps?.some((r: any) => r.name === 'Terry Creely')
-      });
+  const loadData = () => {
+    fetch(`/api/admin/events/${id}`).then(r => r.json()).then(d => {
       setData(d);
-      // Ensure editForm and selectedCourseId are synced properly
-      if (d.event) {
-        setEditForm(d.event);
-        if (d.event.course_id) {
-          setSelectedCourseId(d.event.course_id);
-        }
-      }
-      
-      // Load prize configuration
-      const prizeRes = await fetch(`/api/admin/prizes?event_id=${id}`);
-      const prizeData = await prizeRes.json();
-      if (prizeData.manual && prizeData.config) {
-        setManualPrizes(true);
-        setPrizeConfig(prizeData.config);
-      }
-      
+      setEditForm(d.event || {});
       setLoading(false);
-    } catch (error) {
-      console.error('Error loading data:', error);
-      setLoading(false);
-    }
-  };
-
-  const loadResults = async () => {
-    try {
-      const r = await fetch(`/api/events/${id}/results`);
-      const d = await r.json();
-      setResults(d);
-    } catch (error) {
-      console.error('Error loading results:', error);
-    }
+    }).catch(() => setLoading(false));
   };
 
   useEffect(() => {
@@ -196,102 +120,14 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
     }
   }, [isAuth, id]);
 
-  useEffect(() => {
-    if (tab === 'results' && isAuth) {
-      loadResults();
-    }
-  }, [tab, isAuth, id]);
-
-  const savePrizeConfig = async () => {
-    setSavingPrizes(true);
-    try {
-      const res = await fetch('/api/admin/prizes', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ event_id: id, config: prizeConfig })
-      });
-      if (res.ok) {
-        alert('✅ Prize configuration saved!');
-        setManualPrizes(true);
-      } else {
-        alert('❌ Failed to save prize configuration');
-      }
-    } catch (error) {
-      console.error('Save prizes error:', error);
-      alert('❌ Error saving prizes');
-    }
-    setSavingPrizes(false);
-  };
-
-  const revertToAutoPrizes = async () => {
-    if (!confirm('Revert to auto-calculation?\n\nThis will delete custom prize amounts and use automatic calculation based on payments.')) return;
-    
-    setSavingPrizes(true);
-    try {
-      const res = await fetch(`/api/admin/prizes?event_id=${id}`, { method: 'DELETE' });
-      if (res.ok) {
-        alert('✅ Reverted to auto-calculation');
-        setManualPrizes(false);
-        setPrizeConfig(prev => ({ ...prev, first: 80, second: 60, third: 40, front9: 25, back9: 25, twos: 0, visitor: 0 }));
-      } else {
-        alert('❌ Failed to revert');
-      }
-    } catch (error) {
-      console.error('Revert prizes error:', error);
-      alert('❌ Error reverting');
-    }
-    setSavingPrizes(false);
-  };
-
   const saveDetails = async () => {
     setSaving(true);
-    try {
-      const payload = { action: 'update_details', ...editForm };
-      console.log('Saving event details:', payload);
-      const response = await fetch(`/api/admin/events/${id}`, {
-        method: 'PUT', headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
-      });
-      const result = await response.json();
-      console.log('Save result:', result);
-      if (!response.ok) {
-        alert(`Error saving: ${result.error || 'Unknown error'}`);
-      } else {
-        alert('✅ Event details saved successfully!');
-      }
-      loadData();
-    } catch (err) {
-      console.error('Save error:', err);
-      alert('❌ Error saving event details');
-    }
+    await fetch(`/api/admin/events/${id}`, {
+      method: 'PUT', headers: { 'Content-Type': 'application/json' },
+      body: JSON.stringify({ action: 'update_details', ...editForm }),
+    });
+    loadData();
     setSaving(false);
-  };
-
-  const recalculateScores = async () => {
-    if (!confirm('🔄 Recalculate all scores with current H/C Allowance?\n\nThis will update playing handicaps and Stableford points for all scorecards.')) {
-      return;
-    }
-    
-    setRecalculating(true);
-    try {
-      const response = await fetch('/api/recalculate-event', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ eventId: id })
-      });
-      const result = await response.json();
-      
-      if (!response.ok) {
-        alert(`❌ Error: ${result.error || 'Unknown error'}`);
-      } else {
-        alert(`✅ Recalculated ${result.recalculatedCount} scorecards!\nH/C Allowance: ${result.handicapAllowance}`);
-        loadData();
-      }
-    } catch (err) {
-      console.error('Recalculate error:', err);
-      alert('❌ Failed to recalculate scores');
-    }
-    setRecalculating(false);
   };
 
   const updateStatus = async (status: string) => {
@@ -302,51 +138,13 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
     loadData();
   };
 
-  const handleOpenScoring = async () => {
-    // Check for stale handicaps before opening scoring
-    try {
-      const res = await fetch(`/api/admin/check-stale-handicaps?eventId=${id}&days=30`);
-      if (res.ok) {
-        const data = await res.json();
-        if (data.count > 0) {
-          // Show warning modal
-          setStaleMembers(data.staleMembers);
-          setShowStaleWarning(true);
-          setPendingScoreOpen(true);
-        } else {
-          // No stale handicaps, proceed directly
-          proceedToOpenScoring();
-        }
-      } else {
-        // API failed, proceed anyway
-        proceedToOpenScoring();
-      }
-    } catch (err) {
-      console.error('Handicap check failed:', err);
-      // If check fails, proceed anyway
-      proceedToOpenScoring();
-    }
-  };
-
-  const proceedToOpenScoring = () => {
-    setEditForm({ ...editForm, scoring_open: 1 });
-    setTimeout(saveDetails, 100);
-    setShowStaleWarning(false);
-    setPendingScoreOpen(false);
-  };
-
-  const cancelOpenScoring = () => {
-    setShowStaleWarning(false);
-    setPendingScoreOpen(false);
-  };
-
   const generateTeeTimes = async () => {
     if (!data) return;
     const confirmed = data.rsvps.filter(r => r.status === 'confirmed');
     const shuffled = [...confirmed].sort(() => Math.random() - 0.5);
     const groups: Array<{ group_number: number; tee_time: string; member_ids: string[] }> = [];
     let time = (editForm.first_tee as string) || data.event.first_tee as string || '09:30';
-    const interval = (editForm.tee_interval as number) || (data.event.tee_interval as number) || 8;
+    const interval = (editForm.tee_interval as number) || (data.event.tee_interval as number) || 10;
 
     for (let i = 0; i < shuffled.length; i += 4) {
       const group = shuffled.slice(i, i + 4);
@@ -365,93 +163,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
       body: JSON.stringify({ event_id: id, groups }),
     });
     loadData();
-  };
-
-  const loadScorecard = async () => {
-    if (!editForm.course_name) {
-      setScorecardMessage({ type: 'error', text: 'Please select a course first' });
-      return;
-    }
-
-    setLoadingScorecard(true);
-    setScorecardMessage(null);
-
-    try {
-      // Check if course scorecard exists
-      const checkRes = await fetch(
-        `/api/course-scorecards?course=${encodeURIComponent(editForm.course_name as string)}`
-      );
-      const checkData = await checkRes.json();
-
-      if (!checkData.exists) {
-        setScorecardMessage({ 
-          type: 'info', 
-          text: `No scorecard found for ${editForm.course_name}. Create one in Settings → Scorecards.` 
-        });
-        setLoadingScorecard(false);
-        return;
-      }
-
-      // Load scorecard to event
-      const loadRes = await fetch(`/api/events/${id}/load-scorecard`, {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ 
-          courseName: editForm.course_name
-        })
-      });
-
-      const loadResult = await loadRes.json();
-
-      if (loadResult.success) {
-        // Apply metadata if returned
-        if (loadResult.metadata) {
-          // Find the correct course based on course_name to ensure IDs match
-          const correctCourse = courses.find(c => c.name === editForm.course_name);
-          
-          // Get tees from the CORRECT course (not from old course_id)
-          const correctTees = correctCourse?.tees || [];
-          
-          // Find matching tee by color from the correct course
-          const matchingTee = correctTees.find(t => 
-            t.tee_color.toLowerCase() === loadResult.metadata.tee_color.toLowerCase()
-          );
-          
-          setEditForm({
-            ...editForm,
-            course_id: correctCourse?.id || editForm.course_id,  // FIX: Update course_id to match course_name
-            course_par: loadResult.totals.par,
-            slope_rating: loadResult.metadata.slope_rating,
-            course_rating: loadResult.metadata.course_rating,
-            tee_color: loadResult.metadata.tee_color,  // FIX: Set tee_color from Settings scorecard
-            selected_tee_id: matchingTee?.id || editForm.selected_tee_id  // FIX: Use tee from correct course
-          });
-          
-          // FIX: Sync dropdown to show correct course
-          if (correctCourse) {
-            setSelectedCourseId(correctCourse.id);
-          }
-          
-          setScorecardMetadataLocked(true);
-        }
-        
-        setScorecardMessage({ 
-          type: 'success', 
-          text: `✅ Loaded ${loadResult.totals.holes} holes! Par ${loadResult.totals.par}` 
-        });
-        // Force refresh event data to show loaded holes
-        await loadData();
-        // Clear message after 3 seconds
-        setTimeout(() => setScorecardMessage(null), 3000);
-      } else {
-        setScorecardMessage({ type: 'error', text: loadResult.error || 'Failed to load scorecard' });
-      }
-    } catch (error) {
-      console.error('Error loading scorecard:', error);
-      setScorecardMessage({ type: 'error', text: 'Error loading scorecard' });
-    } finally {
-      setLoadingScorecard(false);
-    }
   };
 
   const saveNtp = async () => {
@@ -478,27 +189,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
     });
     setTwosMemberId(''); setTwosSearch(''); setTwosHole(0); loadData();
   };
-
-  const saveVisitorPrize = async () => {
-    if (!visitorName || !visitorHandicap || !visitorPoints) return;
-    await fetch('/api/side-comps', {
-      method: 'POST', headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ 
-        event_id: id, 
-        type: 'visitors', 
-        hole_number: 0, 
-        visitor_name: visitorName, 
-        visitor_handicap: parseFloat(visitorHandicap) || 0,
-        visitor_points: parseInt(visitorPoints) || 0,
-        value: 0,
-        unit: 'points' 
-      }),
-    });
-    setVisitorName(''); 
-    setVisitorHandicap('');
-    setVisitorPoints('');
-    loadData();
-  };
   const saveSideComp = async () => {
     if (!sideCompForm.member_id || !sideCompForm.value) return;
     await fetch('/api/side-comps', {
@@ -510,17 +200,30 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
     loadData();
   };
 
-
+  const recalculateScores = async () => {
+    if (!confirm('Recalculate all Stableford scores using current handicaps?')) return;
+    const res = await fetch('/api/recalculate-scores', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event_id: id }) });
+    const result = await res.json();
+    if (result.success) {
+      let msg = result.message;
+      if (result.changes?.length > 0) {
+        msg += '\n\nChanges:';
+        for (const c of result.changes) {
+          msg += `\n  ${c.name}: ${c.old_total} → ${c.new_total}`;
+        }
+      }
+      alert(msg);
+    } else {
+      alert('Error: ' + (result.error || 'Unknown'));
+    }
+    loadData();
+  };
 
   const finaliseResults = async () => {
     if (!confirm('Finalise and publish results? This will update the OOM standings.')) return;
     await fetch('/api/finalise', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ event_id: id }) });
     await updateStatus('finalised');
     loadData();
-    // Auto-refresh after 2 seconds to show fresh results
-    setTimeout(() => {
-      window.location.reload();
-    }, 2000);
   };
 
   // Move player to different group
@@ -650,59 +353,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
     setSavingScores(false);
   };
 
-  // Quick handicap update
-  const openHandicapEdit = (player: { member_id: string; name: string; handicap: number }) => {
-    setEditingHandicap({ member_id: player.member_id, name: player.name, current_handicap: player.handicap });
-    setNewHandicap(player.handicap.toString());
-  };
-
-  const saveHandicap = async () => {
-    if (!editingHandicap) return;
-    const value = parseFloat(newHandicap);
-    if (isNaN(value) || value < 0 || value > 54) {
-      alert('Please enter a valid handicap between 0 and 54');
-      return;
-    }
-
-    const change = Math.abs(value - editingHandicap.current_handicap);
-    if (change > 2) {
-      if (!confirm(`Large change detected: ${editingHandicap.current_handicap} → ${value} (${change.toFixed(1)} shots)\n\nContinue?`)) {
-        return;
-      }
-    }
-
-    setSavingHandicap(true);
-    try {
-      // Update member's handicap (single source of truth)
-      await fetch('/api/members/update', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          id: editingHandicap.member_id,  // API expects 'id' not 'member_id'
-          handicap: value,
-        }),
-      });
-
-      // Log the change for audit trail
-      await fetch('/api/member/update-handicap', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          member_id: editingHandicap.member_id,
-          new_handicap: value,
-          update_method: 'admin_quick_edit',
-        }),
-      });
-
-      setEditingHandicap(null);
-      loadData(); // Refresh to show new handicap
-    } catch (e) {
-      console.error('Failed to update handicap', e);
-      alert('Failed to update handicap');
-    }
-    setSavingHandicap(false);
-  };
-
   if (checking || !isAuth) return null;
 
   const evt = data?.event;
@@ -711,7 +361,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
     { key: 'players', label: '👥 Players' },
     { key: 'teetimes', label: '⏰ Tee Times' },
     { key: 'payments', label: '💶 Payments' },
-    { key: 'prizes', label: '💰 Prizes' },
     { key: 'scorecards', label: '📋 Scorecards' },
     { key: 'sidecomps', label: '🎯 Side Comps' },
     { key: 'results', label: '🏆 Results' },
@@ -746,15 +395,14 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
       {/* Score Entry Modal */}
       {scoreEntryPlayer && data && (() => {
         // WHS Playing Handicap Calculation
-        // CORRECT FORMULA: Playing H/C = ROUND(((Index × Slope ÷ 113) + (CR − Par)) × Allowance)
-        // Apply allowance BEFORE rounding!
+        // Course H/C = ROUND((Index × Slope ÷ 113) + (CR − Par), 0)
+        // Playing H/C = ROUND(Course H/C × Allowance, 0)
         const slope = (data.event.slope_rating as number) || 113;
         const courseRating = (data.event.course_rating as number) || 72;
         const coursePar = (data.event.course_par as number) || 72;
         const allowance = (data.event.handicap_allowance as number) || 0.95;
         
-        // Calculate course HC without rounding, apply allowance, then round
-        const courseHC = (scoreEntryPlayer.handicap * slope / 113) + (courseRating - coursePar);
+        const courseHC = Math.round((scoreEntryPlayer.handicap * slope / 113) + (courseRating - coursePar));
         const playingHC = Math.round(courseHC * allowance);
         
         // Calculate stableford points for each hole using WHS playing handicap
@@ -964,7 +612,7 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                       </select>
                     </div>
                   </div>
-                  <div className="flex flex-wrap gap-2 mt-4">
+                  <div className="flex gap-2 mt-4">
                     <button onClick={saveDetails} disabled={saving}
                       className="bg-fairway-900 text-white px-6 py-2 rounded-xl text-sm font-medium disabled:opacity-50">
                       {saving ? 'Saving...' : 'Save Changes'}
@@ -976,15 +624,9 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                       </button>
                     )}
                     {!(editForm.scoring_open as number) && (
-                      <button onClick={handleOpenScoring}
+                      <button onClick={() => { setEditForm({ ...editForm, scoring_open: 1 }); setTimeout(saveDetails, 100); }}
                         className="bg-blue-600 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-blue-700">
                         ⛳ Open Scoring
-                      </button>
-                    )}
-                    {data?.scorecards && data.scorecards.length > 0 && (
-                      <button onClick={recalculateScores} disabled={recalculating}
-                        className="bg-purple-600 text-white px-6 py-2 rounded-xl text-sm font-medium hover:bg-purple-700 disabled:opacity-50">
-                        {recalculating ? '🔄 Recalculating...' : '🔄 Recalculate Scores'}
                       </button>
                     )}
                   </div>
@@ -998,91 +640,67 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                   {/* Course & Tee Selection */}
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">
-                        Golf Course {scorecardMetadataLocked && <span className="text-xs text-fairway-600">🔒 Locked</span>}
-                      </label>
-                      {scorecardMetadataLocked ? (
-                        <div className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 font-medium">
-                          {String(courses.find(c => c.id === (editForm.course_id || data?.event?.course_id))?.name ||
-                           editForm.course_name ||
-                           data?.event?.course_name ||
-                           'Not set')}
-                        </div>
-                      ) : (
-                        <select
-                          value={selectedCourseId}
-                          onChange={e => {
-                            setSelectedCourseId(e.target.value);
-                            setEditForm({ ...editForm, course_id: e.target.value, course_name: courses.find(c => c.id === e.target.value)?.name, selected_tee_id: '' });
-                          }}
-                          className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none"
-                        >
-                          <option value="">-- Select Course --</option>
-                          {courses.map(c => (
-                            <option key={c.id} value={c.id}>{c.name}</option>
-                          ))}
-                        </select>
-                      )}
-                      <p className="text-xs text-gray-400 mt-1">
-                        {scorecardMetadataLocked ? 'From scorecard settings' : 'Select 18-hole combination for 27-hole courses'}
-                      </p>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">Golf Course</label>
+                      <select
+                        value={selectedCourseId}
+                        onChange={e => {
+                          setSelectedCourseId(e.target.value);
+                          setEditForm({ ...editForm, course_id: e.target.value, selected_tee_id: '' });
+                        }}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none"
+                      >
+                        <option value="">-- Select Course --</option>
+                        {courses.map(c => (
+                          <option key={c.id} value={c.id}>{c.name}</option>
+                        ))}
+                      </select>
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">
-                        Tee Colour 🔒
-                      </label>
-                      <div className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 font-medium">
-                        {String(editForm.tee_color || data?.event?.tee_color || 'Not set')}
-                      </div>
-                      <p className="text-xs text-gray-400 mt-1">Auto-filled from scorecard</p>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">Tee Colour</label>
+                      <select
+                        value={(editForm.selected_tee_id as string) || ''}
+                        onChange={e => handleTeeSelect(e.target.value)}
+                        disabled={!selectedCourseId || availableTees.length === 0}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none disabled:bg-gray-100"
+                      >
+                        <option value="">-- Select Tee --</option>
+                        {availableTees.map(t => (
+                          <option key={t.id} value={t.id}>
+                            {t.tee_color} (Slope: {t.slope_rating}, CR: {t.course_rating}, Par: {t.par})
+                          </option>
+                        ))}
+                      </select>
+                      {selectedCourseId && availableTees.length === 0 && (
+                        <p className="text-xs text-amber-600 mt-1">No tees configured for this course yet</p>
+                      )}
                     </div>
                   </div>
 
-                  {/* WHS Values (from scorecard) */}
+                  {/* WHS Values (auto-filled or manual) */}
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-4">
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">
-                        Slope Rating 🔒
-                      </label>
-                      <div className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 font-medium">
-                        {String((editForm.slope_rating as number) || evt?.slope_rating || 'Not set')}
-                      </div>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">Slope Rating</label>
+                      <input type="number" step="1" value={(editForm.slope_rating as number) || 113}
+                        onChange={e => setEditForm({ ...editForm, slope_rating: Number(e.target.value) })}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">
-                        Course Rating 🔒
-                      </label>
-                      <div className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 font-medium">
-                        {String((editForm.course_rating as number) || evt?.course_rating || 'Not set')}
-                      </div>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">Course Rating</label>
+                      <input type="number" step="0.1" value={(editForm.course_rating as number) || 72}
+                        onChange={e => setEditForm({ ...editForm, course_rating: Number(e.target.value) })}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">
-                        Course Par 🔒
-                      </label>
-                      <div className="w-full border border-gray-200 bg-gray-50 rounded-xl px-3 py-2.5 text-sm text-gray-700 font-medium">
-                        {String((editForm.course_par as number) || evt?.course_par || 'Not set')}
-                      </div>
+                      <label className="text-sm font-medium text-gray-700 block mb-1">Course Par</label>
+                      <input type="number" step="1" value={(editForm.course_par as number) || 72}
+                        onChange={e => setEditForm({ ...editForm, course_par: Number(e.target.value) })}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none" />
                     </div>
                     <div>
-                      <label className="text-sm font-medium text-gray-700 block mb-1">H/C Allowance % ✅</label>
-                      <input type="number" step="1" min="0" max="100" 
-                        value={editForm.handicap_allowance !== undefined && editForm.handicap_allowance !== null ? Math.round((editForm.handicap_allowance as number) * 100) : 95}
-                        onKeyDown={e => {
-                          // Prevent leading zeros
-                          if (e.key === '0' && e.currentTarget.value === '') e.preventDefault();
-                        }}
-                        onChange={e => {
-                          let val = e.target.value.replace(/^0+/, '') || '0'; // Remove leading zeros
-                          const numVal = val === '' ? 0 : Math.min(100, Math.max(0, Number(val)));
-                          setEditForm({ ...editForm, handicap_allowance: numVal / 100 });
-                        }}
-                        onBlur={e => {
-                          // Clean up on blur - ensure proper format
-                          const numVal = Math.min(100, Math.max(0, Number(e.target.value) || 0));
-                          setEditForm({ ...editForm, handicap_allowance: numVal / 100 });
-                        }}
-                        className="w-full border border-fairway-600 rounded-xl px-3 py-2.5 text-sm font-medium focus:border-fairway-800 focus:outline-none focus:ring-2 focus:ring-fairway-200" />
+                      <label className="text-sm font-medium text-gray-700 block mb-1">H/C Allowance %</label>
+                      <input type="number" step="1" value={((editForm.handicap_allowance as number) || 0.95) * 100}
+                        onChange={e => setEditForm({ ...editForm, handicap_allowance: Number(e.target.value) / 100 })}
+                        className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none" />
                     </div>
                   </div>
                   
@@ -1117,89 +735,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                           </tbody>
                         </table>
                       </div>
-                    </div>
-                  )}
-                </div>
-
-                {/* Course Holes Management */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm">
-                  <h3 className="font-bold text-gray-900 mb-2">⛳ Course Holes Management</h3>
-                  <p className="text-xs text-gray-500 mb-4">
-                    Load the 18-hole scorecard for this course and tee combination
-                  </p>
-
-                  {/* Load Scorecard Button */}
-                  <div className="flex items-center gap-3 mb-4">
-                    <button
-                      onClick={loadScorecard}
-                      disabled={!selectedCourseId || loadingScorecard || scorecardMetadataLocked}
-                      className="bg-fairway-800 text-white px-6 py-2.5 rounded-xl font-medium hover:bg-fairway-900 disabled:bg-gray-300 disabled:cursor-not-allowed transition-colors flex items-center gap-2"
-                    >
-                      {loadingScorecard ? (
-                        <>
-                          <span className="inline-block animate-spin">⏳</span>
-                          Loading...
-                        </>
-                      ) : (
-                        <>
-                          📋 Load Scorecard from Master
-                        </>
-                      )}
-                    </button>
-                    {!selectedCourseId && !scorecardMetadataLocked && (
-                      <p className="text-xs text-gray-400">
-                        ℹ️ Select course first
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Scorecard Status Message (hide if holes already loaded) */}
-                  {scorecardMessage && !(data && data.holes && data.holes.length > 0) && (
-                    <div className={`p-3 rounded-xl text-sm mb-4 ${
-                      scorecardMessage.type === 'success' ? 'bg-green-50 text-green-700 border border-green-200' :
-                      scorecardMessage.type === 'error' ? 'bg-red-50 text-red-700 border border-red-200' :
-                      'bg-blue-50 text-blue-700 border border-blue-200'
-                    }`}>
-                      {scorecardMessage.text}
-                    </div>
-                  )}
-
-                  {/* Current Holes Status */}
-                  {data && data.holes && data.holes.length > 0 && (
-                    <div className="border-t border-gray-100 pt-4">
-                      <div className="flex items-center justify-between mb-2">
-                        <h4 className="text-sm font-bold text-gray-700">✅ Course Holes Loaded</h4>
-                        <span className="text-xs text-gray-500">
-                          {data.holes.length} holes • Par {data.holes.reduce((sum, h) => sum + h.par, 0)} • {data.holes.reduce((sum, h) => sum + h.yardage, 0)} yards
-                        </span>
-                      </div>
-                      <div className="grid grid-cols-9 gap-1 text-xs">
-                        {data.holes.slice(0, 9).map(h => (
-                          <div key={h.hole_number} className="bg-gray-50 p-1.5 rounded text-center">
-                            <div className="font-bold text-fairway-800 text-sm">{h.hole_number}</div>
-                            <div className="text-gray-600">Par {h.par}</div>
-                            <div className="text-gray-400 text-[10px]">SI {h.stroke_index}</div>
-                            <div className="text-gray-400 text-[10px]">{h.yardage}y</div>
-                          </div>
-                        ))}
-                      </div>
-                      <div className="grid grid-cols-9 gap-1 text-xs mt-1">
-                        {data.holes.slice(9, 18).map(h => (
-                          <div key={h.hole_number} className="bg-gray-50 p-1.5 rounded text-center">
-                            <div className="font-bold text-fairway-800 text-sm">{h.hole_number}</div>
-                            <div className="text-gray-600">Par {h.par}</div>
-                            <div className="text-gray-400 text-[10px]">SI {h.stroke_index}</div>
-                            <div className="text-gray-400 text-[10px]">{h.yardage}y</div>
-                          </div>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-
-                  {/* No Holes Warning */}
-                  {data && (!data.holes || data.holes.length === 0) && (
-                    <div className="bg-amber-50 border border-amber-200 rounded-xl p-3 text-sm text-amber-700">
-                      ⚠️ No course holes configured yet. Load from master or enter manually.
                     </div>
                   )}
                 </div>
@@ -1313,52 +848,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
               <div>
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-900">Players & RSVPs</h3>
-                  <div className="flex gap-2">
-                    <button
-                      onClick={async () => {
-                        const res = await fetch('/api/admin/validate-event-data', {
-                          method: 'POST',
-                          headers: { 'Content-Type': 'application/json' },
-                          body: JSON.stringify({ event_id: id })
-                        });
-                        const result = await res.json();
-                        if (result.healthy) {
-                          alert('✅ Data Health Check: All Good!\n\n' +
-                            `RSVPs: ${result.summary.rsvps}\n` +
-                            `Scorecards: ${result.summary.scorecards}\n` +
-                            `Tee Times: ${result.summary.tee_times}`);
-                        } else {
-                          const msg = [];
-                          if (result.issues?.length) msg.push('ISSUES:\n' + result.issues.join('\n'));
-                          if (result.warnings?.length) msg.push('WARNINGS:\n' + result.warnings.join('\n'));
-                          alert('⚠️ Data Health Check\n\n' + msg.join('\n\n'));
-                        }
-                      }}
-                      className="px-4 py-2 bg-blue-600 text-white rounded-xl text-sm font-semibold hover:bg-blue-700 transition"
-                    >
-                      🩺 Health Check
-                    </button>
-                    <button
-                      onClick={async () => {
-                      if (!confirm('Sync Event Data?\n\nThis will:\n• Create missing RSVPs for tee time players\n• Create missing scorecards\n• Fix data inconsistencies')) return;
-                      const res = await fetch('/api/admin/sync-event-data', {
-                        method: 'POST',
-                        headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ event_id: id })
-                      });
-                      const result = await res.json();
-                      if (result.success) {
-                        alert(`✅ Sync complete!\n\n${result.details.join('\n')}`);
-                        loadData();
-                      } else {
-                        alert(`❌ Error: ${result.error}`);
-                      }
-                    }}
-                    className="px-4 py-2 bg-purple-600 text-white rounded-xl text-sm font-semibold hover:bg-purple-700 transition"
-                  >
-                    🔄 Sync Event Data
-                  </button>
-                  </div>
                   <div className="flex gap-2 text-xs">
                     <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
                       ✅ {data.rsvps.filter(r => r.status === 'confirmed').length}
@@ -1380,38 +869,9 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                   return (
                     <div className="bg-orange-50 rounded-2xl p-4 mb-4 border border-orange-200">
                       <h4 className="text-sm font-bold text-orange-800 mb-2">⚠️ Not Responded ({notResponded.length})</h4>
-                      <p className="text-xs text-orange-600 mb-3">👆 Tap any name to quickly add them as confirmed RSVP</p>
                       <div className="flex flex-wrap gap-2">
                         {notResponded.sort((a, b) => a.name.trim().split(' ').slice(-1)[0].localeCompare(b.name.trim().split(' ').slice(-1)[0])).map(m => (
-                          <button
-                            key={m.id}
-                            onClick={async () => {
-                              if (!confirm(`Add ${m.name} as confirmed RSVP?`)) return;
-                              try {
-                                const res = await fetch('/api/rsvps', {
-                                  method: 'POST',
-                                  headers: { 'Content-Type': 'application/json' },
-                                  body: JSON.stringify({
-                                    event_id: id,
-                                    member_id: m.id,
-                                    status: 'confirmed',
-                                    created_by: 'admin'
-                                  })
-                                });
-                                if (res.ok) {
-                                  alert(`✅ ${m.name} added to RSVPs!`);
-                                  loadData();
-                                } else {
-                                  alert('❌ Failed to add RSVP');
-                                }
-                              } catch (error) {
-                                alert('❌ Error adding RSVP');
-                              }
-                            }}
-                            className="text-xs bg-white px-2 py-1 rounded-lg border border-orange-200 text-orange-700 hover:bg-orange-100 hover:border-orange-300 cursor-pointer transition-colors"
-                          >
-                            {m.name.trim()}
-                          </button>
+                          <span key={m.id} className="text-xs bg-white px-2 py-1 rounded-lg border border-orange-200 text-orange-700">{m.name.trim()}</span>
                         ))}
                       </div>
                     </div>
@@ -2071,327 +1531,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
               </div>
             )}
 
-            {/* PRIZES TAB */}
-            {tab === 'prizes' && (
-              <div>
-                <h3 className="font-bold text-gray-900 mb-4">💰 Prize Configuration</h3>
-                
-                <div className="bg-blue-50 border border-blue-200 rounded-xl p-4 mb-6">
-                  <div className="flex items-start gap-3">
-                    <span className="text-2xl">ℹ️</span>
-                    <div className="flex-1">
-                      <p className="font-semibold text-blue-900 mb-1">Prize Calculation Modes</p>
-                      <ul className="text-sm text-blue-800 space-y-1">
-                        <li><strong>Auto:</strong> System calculates prizes based on Society payments (Prize Pool = Payments × 30%)</li>
-                        <li><strong>Manual:</strong> Set specific euro amounts for each prize category</li>
-                      </ul>
-                    </div>
-                  </div>
-                </div>
-
-                {manualPrizes ? (
-                  <div className="bg-white rounded-2xl shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-6">
-                      <div>
-                        <h4 className="font-bold text-gray-900">🔧 Manual Prize Configuration</h4>
-                        <p className="text-xs text-gray-500 mt-1">Custom prize amounts (overrides auto-calculation)</p>
-                      </div>
-                      <button
-                        onClick={revertToAutoPrizes}
-                        disabled={savingPrizes}
-                        className="text-sm text-red-600 hover:text-red-700 font-medium"
-                      >
-                        Revert to Auto
-                      </button>
-                    </div>
-
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                      {/* Overall Prizes */}
-                      <div>
-                        <h5 className="font-semibold text-gray-900 mb-3">🏆 Overall Winners</h5>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">1st Place</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.first}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, first: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="0"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">2nd Place</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.second}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, second: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="0"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">3rd Place</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.third}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, third: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="0"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-
-                          {/* Captain's Prize Class Winners - Only show if event_type is 'captain' */}
-                          {editForm.event_type === 'captains' && (
-                            <>
-                              <div className="border-t border-gray-200 pt-3 mt-3">
-                                <h6 className="text-xs font-semibold text-gray-600 uppercase mb-2">Class 1 Winners</h6>
-                                <div className="space-y-2">
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">1st in Class</label>
-                                    <div className="flex items-center">
-                                      <span className="text-gray-500 mr-2 text-sm">€</span>
-                                      <input
-                                        type="number"
-                                        value={prizeConfig.class1_first}
-                                        onChange={(e) => setPrizeConfig({ ...prizeConfig, class1_first: Number(e.target.value) })}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="40"
-                                        min="0"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">2nd in Class</label>
-                                    <div className="flex items-center">
-                                      <span className="text-gray-500 mr-2 text-sm">€</span>
-                                      <input
-                                        type="number"
-                                        value={prizeConfig.class1_second}
-                                        onChange={(e) => setPrizeConfig({ ...prizeConfig, class1_second: Number(e.target.value) })}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="30"
-                                        min="0"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              <div className="border-t border-gray-200 pt-3 mt-3">
-                                <h6 className="text-xs font-semibold text-gray-600 uppercase mb-2">Class 2 Winners</h6>
-                                <div className="space-y-2">
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">1st in Class</label>
-                                    <div className="flex items-center">
-                                      <span className="text-gray-500 mr-2 text-sm">€</span>
-                                      <input
-                                        type="number"
-                                        value={prizeConfig.class2_first}
-                                        onChange={(e) => setPrizeConfig({ ...prizeConfig, class2_first: Number(e.target.value) })}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="40"
-                                        min="0"
-                                      />
-                                    </div>
-                                  </div>
-                                  <div>
-                                    <label className="block text-xs text-gray-600 mb-1">2nd in Class</label>
-                                    <div className="flex items-center">
-                                      <span className="text-gray-500 mr-2 text-sm">€</span>
-                                      <input
-                                        type="number"
-                                        value={prizeConfig.class2_second}
-                                        onChange={(e) => setPrizeConfig({ ...prizeConfig, class2_second: Number(e.target.value) })}
-                                        className="w-full border border-gray-300 rounded-lg px-3 py-2 text-sm"
-                                        placeholder="30"
-                                        min="0"
-                                      />
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-                            </>
-                          )}
-                        </div>
-                      </div>
-
-                      {/* 9-Hole & Other Prizes */}
-                      <div>
-                        <h5 className="font-semibold text-gray-900 mb-3">🎯 Other Prizes</h5>
-                        <div className="space-y-3">
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Front 9 Winner</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.front9}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, front9: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="25"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Back 9 Winner</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.back9}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, back9: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="25"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Twos Pot (total pool)</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.twos}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, twos: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="0"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Best Visitor</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.visitor}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, visitor: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="0"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Nearest the Pin</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.nearest_pin}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, nearest_pin: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="20"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                          <div>
-                            <label className="block text-sm font-medium text-gray-700 mb-1">Longest Drive</label>
-                            <div className="flex items-center">
-                              <span className="text-gray-500 mr-2">€</span>
-                              <input
-                                type="number"
-                                value={prizeConfig.longest_drive}
-                                onChange={(e) => setPrizeConfig({ ...prizeConfig, longest_drive: Number(e.target.value) })}
-                                className="w-full border border-gray-300 rounded-lg px-3 py-2"
-                                placeholder="20"
-                                min="0"
-                              />
-                            </div>
-                          </div>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 flex gap-3">
-                      <button
-                        onClick={savePrizeConfig}
-                        disabled={savingPrizes}
-                        className="bg-fairway-900 text-white px-6 py-3 rounded-xl font-semibold disabled:opacity-50"
-                      >
-                        {savingPrizes ? 'Saving...' : '✅ Save Prize Configuration'}
-                      </button>
-                      <button
-                        onClick={() => {
-                          const total = prizeConfig.first + prizeConfig.second + prizeConfig.third + prizeConfig.front9 + prizeConfig.back9;
-                          const totalWithTwos = total + prizeConfig.twos;
-                          alert(`Total Prizes: €${totalWithTwos}\n\n1st: €${prizeConfig.first}\n2nd: €${prizeConfig.second}\n3rd: €${prizeConfig.third}\nFront 9: €${prizeConfig.front9}\nBack 9: €${prizeConfig.back9}\nTwos Pot: €${prizeConfig.twos}\nVisitor: €${prizeConfig.visitor}`);
-                        }}
-                        className="bg-gray-200 text-gray-700 px-6 py-3 rounded-xl font-semibold"
-                      >
-                        📊 Preview Total
-                      </button>
-                    </div>
-                  </div>
-                ) : (
-                  <div className="bg-white rounded-2xl shadow-sm p-6">
-                    <div className="flex items-center justify-between mb-4">
-                      <div>
-                        <h4 className="font-bold text-gray-900">⚙️ Auto Prize Calculation</h4>
-                        <p className="text-xs text-gray-500 mt-1">Prizes calculated automatically from Society payments</p>
-                      </div>
-                      <button
-                        onClick={() => setManualPrizes(true)}
-                        className="bg-fairway-900 text-white px-4 py-2 rounded-xl text-sm font-semibold"
-                      >
-                        🔧 Switch to Manual
-                      </button>
-                    </div>
-
-                    <div className="bg-gray-50 rounded-xl p-4">
-                      <p className="text-sm text-gray-700 mb-3"><strong>Auto-Calculation (Fixed Amounts):</strong></p>
-                      <ul className="text-sm text-gray-600 space-y-1">
-                        <li>• 1st Place: €80 (fixed)</li>
-                        <li>• 2nd Place: €60 (fixed)</li>
-                        <li>• 3rd Place: €40 (fixed)</li>
-                        <li>• Front 9: €25 (fixed)</li>
-                        <li>• Back 9: €25 (fixed)</li>
-                        <li>• Twos: Variable pot (shared among winners)</li>
-                      </ul>
-                      <div className="mt-4 p-3 bg-blue-100 rounded-lg">
-                        <p className="text-xs text-blue-900">
-                          <strong>Total Standard Prizes:</strong> €230<br />
-                          (1st: €80 + 2nd: €60 + 3rd: €40 + F9: €25 + B9: €25)<br />
-                          Plus Twos pot and any additional prizes
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="mt-6 bg-yellow-50 border border-yellow-200 rounded-xl p-4">
-                      <div className="flex items-start gap-2">
-                        <span className="text-xl">💡</span>
-                        <div>
-                          <p className="text-sm font-semibold text-yellow-900">When to use Manual?</p>
-                          <ul className="text-xs text-yellow-800 mt-1 space-y-1">
-                            <li>• Captain's Day with sponsored prizes</li>
-                            <li>• Special events with fixed prize amounts</li>
-                            <li>• When you want different splits than 50/30/20</li>
-                          </ul>
-                        </div>
-                      </div>
-                    </div>
-                  </div>
-                )}
-              </div>
-            )}
-
             {/* SCORECARDS TAB */}
             {tab === 'scorecards' && (
               <div>
@@ -2425,15 +1564,7 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                           >
                             <p className="text-sm font-medium text-gray-900">{player.name}</p>
                             <p className="text-xs text-gray-400">
-                              Hcp {player.handicap} 
-                              <button
-                                onClick={(e) => { e.stopPropagation(); openHandicapEdit({ member_id: player.member_id, name: player.name, handicap: player.handicap }); }}
-                                className="ml-2 text-xs bg-blue-100 text-blue-800 px-2 py-0.5 rounded font-medium"
-                                title="Quick edit handicap"
-                              >
-                                Edit
-                              </button>
-                               · {scorecard?.status === 'submitted' ? 'Submitted' : scorecard ? `${scorecard.holes_completed}/18` : 'No scores yet'}
+                              Hcp {player.handicap} · {scorecard?.status === 'submitted' ? 'Submitted' : scorecard ? `${scorecard.holes_completed}/18` : 'No scores yet'}
                             </p>
                           </button>
                           <div className="flex items-center gap-2">
@@ -2577,21 +1708,7 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
 
                 {/* Twos Competition */}
                 <div className="bg-white rounded-2xl p-5 shadow-sm mt-4">
-                  <div className="flex items-center justify-between mb-3">
-                    <h4 className="font-bold text-gray-900">🏆 Twos</h4>
-                    {(() => {
-                      const twosCount = data.sideComps.filter(s => s.type === 'twos').length;
-                      const twosPot = 25; // Default - should pull from prize_config if available
-                      const splitAmount = twosCount > 0 ? Math.round((twosPot / twosCount) * 100) / 100 : 0;
-                      return twosCount > 0 ? (
-                        <div className="text-xs text-gray-600">
-                          <span className="font-medium">{twosCount} winner{twosCount !== 1 ? 's' : ''}</span>
-                          <span className="text-gray-400 mx-1">•</span>
-                          <span>€{splitAmount.toFixed(2)} each</span>
-                        </div>
-                      ) : null;
-                    })()}
-                  </div>
+                  <h4 className="font-bold text-gray-900 mb-3">🏆 Twos</h4>
                   {data.sideComps.filter(s => s.type === 'twos').map(sc => (
                     <div key={sc.id} className="py-2 border-b border-gray-50">
                       <div className="flex items-center justify-between">
@@ -2602,7 +1719,7 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                           <button onClick={async () => {
                             if (!confirm(`Remove Two: ${sc.member_name} (Hole ${sc.hole_number})?`)) return;
                             await fetch('/api/side-comps', { method: 'POST', headers: {'Content-Type':'application/json'},
-                              body: JSON.stringify({ action: 'delete', event_id: id, type: 'twos', hole_number: sc.hole_number, member_id: sc.member_id }) });
+                              body: JSON.stringify({ action: 'delete', event_id: id, type: 'twos', hole_number: sc.hole_number }) });
                             loadData();
                           }} className="text-xs text-red-400 hover:text-red-600 px-2">✕</button>
                         </div>
@@ -2639,101 +1756,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                     </button>
                   </div>
                 </div>
-
-                {/* Add Visitor */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm mt-4">
-                  <h4 className="font-bold text-gray-900 mb-3">🏍️ Add Visitor</h4>
-                  <p className="text-xs text-gray-500 mb-3">Add a visitor who can play but won't win regular prizes</p>
-                  <input type="text" placeholder="Visitor name..." value={visitorName}
-                    onChange={e => setVisitorName(e.target.value)}
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" />
-                  <input type="number" placeholder="Handicap" value={visitorHandicap}
-                    onChange={e => setVisitorHandicap(e.target.value)}
-                    step="0.1"
-                    className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" />
-                  <button onClick={async () => {
-                    if (!visitorName || !visitorHandicap) return;
-                    // Create visitor member
-                    const res = await fetch('/api/members', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        name: visitorName,
-                        handicap: parseFloat(visitorHandicap),
-                        member_type: 'visitor',
-                        status: 'active'
-                      })
-                    });
-                    const visitor = await res.json();
-                    // Create RSVP for this event
-                    await fetch('/api/rsvps', {
-                      method: 'POST',
-                      headers: { 'Content-Type': 'application/json' },
-                      body: JSON.stringify({
-                        event_id: id,
-                        member_id: visitor.id,
-                        status: 'confirmed'
-                      })
-                    });
-                    setVisitorName('');
-                    setVisitorHandicap('');
-                    alert(`✅ Visitor added: ${visitorName}`);
-                    loadData();
-                  }} disabled={!visitorName || !visitorHandicap}
-                    className="bg-fairway-900 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 w-full">
-                    Add Visitor to Event
-                  </button>
-                </div>
-
-                {/* Visitors Prize Winner */}
-                <div className="bg-white rounded-2xl p-5 shadow-sm mt-4">
-                  <h4 className="font-bold text-gray-900 mb-3">🏆 Visitors Prize</h4>
-                  {data.sideComps.filter(s => s.type === 'visitors').map(sc => (
-                    <div key={sc.id} className="py-2 border-b border-gray-50">
-                      <div className="flex items-center justify-between">
-                        <span className="text-sm"><span className="font-bold">{sc.member_name}</span> — {sc.value} points</span>
-                        <button onClick={async () => {
-                          if (!confirm(`Remove: ${sc.member_name}?`)) return;
-                          await fetch('/api/side-comps', { method: 'POST', headers: {'Content-Type':'application/json'},
-                            body: JSON.stringify({ action: 'delete', event_id: id, type: 'visitors', hole_number: 0, member_id: sc.member_id }) });
-                          loadData();
-                        }} className="text-xs text-red-400 hover:text-red-600 px-2">✕</button>
-                      </div>
-                    </div>
-                  ))}
-                  <div className="mt-4 pt-3 border-t border-gray-100">
-                    <p className="text-xs text-gray-500 mb-2">Select Visitors Prize Winner</p>
-                    <input type="text" placeholder="Search visitor..." value={visitorPoints}
-                      onChange={e => { setVisitorPoints(e.target.value); setVisitorHandicap(''); }}
-                      className="w-full border border-gray-200 rounded-lg px-2 py-1.5 text-sm mb-2" />
-                    {visitorPoints && !visitorHandicap && (
-                      <div className="max-h-32 overflow-y-auto space-y-1 mb-2 border border-gray-100 rounded-lg">
-                        {data.rsvps.filter(r => r.member_type === 'visitor' && r.name.toLowerCase().includes(visitorPoints.toLowerCase())).sort((a, b) => { const sA = (a.name||'').trim().split(' ').slice(-1)[0]; const sB = (b.name||'').trim().split(' ').slice(-1)[0]; return sA.localeCompare(sB); }).map(r => (
-                          <button key={r.member_id} onClick={() => { setVisitorHandicap(r.member_id); setVisitorPoints(r.name); }}
-                            className="w-full text-left px-3 py-2 text-sm hover:bg-fairway-50 border-b border-gray-50 last:border-0">
-                            {r.name} (H/C {r.handicap})
-                          </button>
-                        ))}
-                      </div>
-                    )}
-                    {visitorHandicap && <p className="text-sm text-fairway-800 font-medium mb-2">✅ {visitorPoints}</p>}
-                    <input type="number" placeholder="Points scored" value={visitorName}
-                      onChange={e => setVisitorName(e.target.value)}
-                      className="w-full border border-gray-200 rounded-lg px-3 py-2 text-sm mb-2" />
-                    <button onClick={async () => {
-                      if (!visitorHandicap || !visitorName) return;
-                      await fetch('/api/side-comps', {
-                        method: 'POST', headers: { 'Content-Type': 'application/json' },
-                        body: JSON.stringify({ event_id: id, type: 'visitors', hole_number: 0, member_id: visitorHandicap, value: parseInt(visitorName) || 0, unit: 'points' }),
-                      });
-                      setVisitorHandicap(''); setVisitorPoints(''); setVisitorName('');
-                      loadData();
-                    }} disabled={!visitorHandicap || !visitorName}
-                      className="bg-fairway-900 text-white px-4 py-2 rounded-lg text-sm font-medium disabled:opacity-50 w-full">
-                      Save Visitors Prize Winner
-                    </button>
-                  </div>
-                </div>
               </div>
             )}
 
@@ -2743,10 +1765,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                 <div className="flex items-center justify-between mb-4">
                   <h3 className="font-bold text-gray-900">Results</h3>
                   <div className="flex gap-2">
-                    <button onClick={() => { loadData(); window.location.reload(); }}
-                      className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-sm font-medium transition-colors">
-                      🔄 Refresh
-                    </button>
                     <button onClick={recalculateScores}
                       className="px-3 py-1.5 bg-blue-50 hover:bg-blue-100 text-blue-700 rounded-lg text-sm font-medium transition-colors">
                       📊 Recalculate Scores
@@ -2781,9 +1799,9 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                   </div>
                 </div>
 
-                {results && results.prizes && results.prizes.length > 0 ? (
+                {data.prizes.length > 0 ? (
                   <div className="space-y-2 mb-4">
-                    {results.prizes.map((p: any, i: number) => (
+                    {data.prizes.map((p, i) => (
                       <div key={i} className="bg-white rounded-xl p-3 shadow-sm flex justify-between items-center">
                         <span className="text-sm font-medium">{p.label}</span>
                         {p.value > 0 && <span className="text-sm text-fairway-800 font-bold">€{p.value}</span>}
@@ -2792,7 +1810,7 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
                   </div>
                 ) : (
                   <div className="bg-white rounded-2xl p-8 text-center shadow-sm mb-4">
-                    <p className="text-gray-400">{results ? 'No results yet. Finalise the event to generate results.' : 'Loading results...'}</p>
+                    <p className="text-gray-400">No results yet. Finalise the event to generate results.</p>
                   </div>
                 )}
 
@@ -2820,80 +1838,6 @@ export default function AdminEventPage({ params }: { params: Promise<{ id: strin
           </>
         )}
       </div>
-
-      {/* Quick Handicap Edit Modal */}
-      {editingHandicap && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50" onClick={() => setEditingHandicap(null)}>
-          <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4 shadow-2xl" onClick={(e) => e.stopPropagation()}>
-            <h3 className="text-lg font-bold text-gray-900 mb-1">Update Handicap Index</h3>
-            <p className="text-sm text-gray-600 mb-4">{editingHandicap.name}</p>
-            
-            <div className="bg-gray-50 rounded-xl p-4 mb-4">
-              <label className="text-xs text-gray-500 block mb-1">Current Handicap Index</label>
-              <p className="text-2xl font-bold text-gray-900">{editingHandicap.current_handicap}</p>
-            </div>
-
-            <div className="mb-4">
-              <label className="text-xs text-gray-500 block mb-1">New Handicap Index</label>
-              <input
-                type="number"
-                step="0.1"
-                min="0"
-                max="54"
-                value={newHandicap}
-                onChange={(e) => setNewHandicap(e.target.value)}
-                className="w-full border-2 border-fairway-600 rounded-xl px-4 py-3 text-lg font-medium focus:outline-none focus:ring-2 focus:ring-fairway-200"
-                autoFocus
-              />
-            </div>
-
-            {newHandicap && !isNaN(parseFloat(newHandicap)) && (
-              <div className="bg-blue-50 rounded-xl p-3 mb-4">
-                <p className="text-xs text-gray-600 mb-1">Playing Handicap (this event)</p>
-                <p className="text-lg font-bold text-blue-900">
-                  {Math.round(
-                    (parseFloat(newHandicap) * ((evt?.slope_rating as number) || 113) / 113) +
-                    (((evt?.course_rating as number) || 72) - ((evt?.course_par as number) || 72))
-                  ) * ((evt?.handicap_allowance as number) || 0.95)}
-                </p>
-                <p className="text-xs text-gray-500 mt-1">
-                  Based on Slope {(evt?.slope_rating as number) || 113}, CR {(evt?.course_rating as number) || 72}, Par {(evt?.course_par as number) || 72}, {Math.round(((evt?.handicap_allowance as number) || 0.95) * 100)}% allowance
-                </p>
-              </div>
-            )}
-
-            <div className="flex gap-3">
-              <button
-                onClick={() => setEditingHandicap(null)}
-                className="flex-1 bg-gray-100 text-gray-700 px-4 py-3 rounded-xl font-medium hover:bg-gray-200"
-                disabled={savingHandicap}
-              >
-                Cancel
-              </button>
-              <button
-                onClick={saveHandicap}
-                className="flex-1 bg-fairway-900 text-white px-4 py-3 rounded-xl font-medium hover:bg-fairway-800 disabled:opacity-50"
-                disabled={savingHandicap || !newHandicap || isNaN(parseFloat(newHandicap))}
-              >
-                {savingHandicap ? 'Saving...' : 'Save & Update'}
-              </button>
-            </div>
-
-            <p className="text-xs text-gray-400 mt-3 text-center">
-              ⚠️ This updates the member's permanent handicap index (single source of truth)
-            </p>
-          </div>
-        </div>
-      )}
-
-      {/* Stale Handicap Warning Modal */}
-      {showStaleWarning && (
-        <StaleHandicapWarning
-          staleMembers={staleMembers}
-          onProceed={proceedToOpenScoring}
-          onCancel={cancelOpenScoring}
-        />
-      )}
     </div>
   );
 }

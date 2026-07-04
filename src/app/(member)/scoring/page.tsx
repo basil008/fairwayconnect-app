@@ -3,11 +3,21 @@
 import { useEffect, useState, useCallback, useRef } from 'react';
 import Link from 'next/link';
 import { useMember } from '@/lib/MemberContext';
-import { calculateStablefordPoints, type WHSCourseSettings } from '@/lib/stableford';
 
 interface Hole { hole_number: number; par: number; stroke_index: number; yardage: number; }
 interface Player { id: string; name: string; handicap: number; can_enter_scores: number; }
 interface HoleScore { hole_number: number; gross_score: number; stableford_points: number; }
+
+function calcStablefordPoints(gross: number, par: number, si: number, hcp: number): number {
+  // Round handicap index to playing handicap for stroke allocation
+  const playingHcp = Math.round(hcp);
+  // Using handicap >= SI for stroke allocation (standard golf rules)
+  let strokes = 0;
+  if (playingHcp >= si) strokes++;
+  if (playingHcp >= si + 18) strokes++;
+  const net = gross - strokes;
+  return Math.max(0, 2 - (net - par));
+}
 
 export default function ScoringPage() {
   const { member: identifiedMember, isIdentified } = useMember();
@@ -26,7 +36,6 @@ export default function ScoringPage() {
   const [noEvent, setNoEvent] = useState(false);
   const [autoSelected, setAutoSelected] = useState(false);
   const [memberScoringEnabled, setMemberScoringEnabled] = useState(true);
-  const [courseSettings, setCourseSettings] = useState<WHSCourseSettings | undefined>(undefined);
   const [scorecardStatus, setScorecardStatus] = useState<'none' | 'in_progress' | 'submitted'>('none');
   const fileInputRef = useRef<HTMLInputElement>(null);
 
@@ -41,32 +50,19 @@ export default function ScoringPage() {
         return;
       }
       setHoles(data.holes || []);
-      // WHS settings so on-course points match the server exactly
-      // (previously the client used a plain Math.round(index) and diverged)
-      if (data.slope_rating) {
-        setCourseSettings({
-          slopeRating: data.slope_rating || 113,
-          courseRating: data.course_rating || 72,
-          coursePar: data.course_par || 72,
-          handicapAllowance: data.handicap_allowance || 0.95,
-        });
-      }
-      const currentEventId = data.id;
-      setEventId(currentEventId);
+      setEventId(data.id);
       setEventStatus(data.status);
       setEventName(data.name);
       setCourseName(data.course_name);
-      
-      // Fetch RSVPs ONLY for the current event
-      fetch(`/api/rsvps?event_id=${currentEventId}`).then(r => r.json()).then(rsvps => {
-        const confirmed = (rsvps || []).filter((r: { status: string }) => r.status === 'confirmed');
-        setPlayers(confirmed.sort((a: any, b: any) => { const sA = (a.name||'').trim().split(' ').slice(-1)[0]; const sB = (b.name||'').trim().split(' ').slice(-1)[0]; return sA.localeCompare(sB); }).map((r: { member_id: string; name: string; handicap: number; can_enter_scores?: number }) => ({
-          id: r.member_id, name: r.name, handicap: r.handicap, can_enter_scores: r.can_enter_scores ?? 1
-        })));
-      });
+    });
+    fetch('/api/rsvps').then(r => r.json()).then(rsvps => {
+      const confirmed = (rsvps || []).filter((r: { status: string }) => r.status === 'confirmed');
+      setPlayers(confirmed.sort((a: any, b: any) => { const sA = (a.name||'').trim().split(' ').slice(-1)[0]; const sB = (b.name||'').trim().split(' ').slice(-1)[0]; return sA.localeCompare(sB); }).map((r: { member_id: string; name: string; handicap: number; can_enter_scores?: number }) => ({
+        id: r.member_id, name: r.name, handicap: r.handicap, can_enter_scores: r.can_enter_scores ?? 1
+      })));
     });
     // Check if member scoring is enabled
-    fetch('/api/settings/public').then(r => r.json()).then(settings => {
+    fetch('/api/admin/settings').then(r => r.json()).then(settings => {
       setMemberScoringEnabled(settings.member_score_entry !== 'disabled');
     }).catch(() => {});
   }, []);
@@ -114,7 +110,7 @@ export default function ScoringPage() {
     if (!player) return;
     const holeData = holes.find(h => h.hole_number === holeNum);
     if (!holeData) return;
-    const pts = calculateStablefordPoints(gross, holeData.par, holeData.stroke_index, player.handicap, courseSettings);
+    const pts = calcStablefordPoints(gross, holeData.par, holeData.stroke_index, player.handicap);
     const newScores = new Map(scores);
     newScores.set(holeNum, { hole_number: holeNum, gross_score: gross, stableford_points: pts });
     setScores(newScores);
@@ -128,17 +124,6 @@ export default function ScoringPage() {
   }, [player, holes, scores, eventId, selectedPlayer]);
 
   const submitScorecard = async () => {
-    // Confirmation dialog before submitting
-    const confirmed = window.confirm(
-      '⚠️ Are you sure all the scores are correct?\n\n' +
-      'Please double-check your scorecard before submitting.\n\n' +
-      'Click OK to submit, or Cancel to review.'
-    );
-    
-    if (!confirmed) {
-      return; // User cancelled, don't submit
-    }
-    
     setSaving(true);
     try {
       const allScores = Array.from(scores.values()).map(s => ({ hole_number: s.hole_number, gross_score: s.gross_score }));

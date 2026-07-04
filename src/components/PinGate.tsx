@@ -113,15 +113,15 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
       if (res.ok) {
         const data = await res.json();
 
-        // ── DEFENSIVE: Handle multiple possible response shapes ──
-        // The API might return { id, name, handicap } directly
-        // or wrapped as { member: { ... } } or { data: { ... } }
-        const memberData = data.member || data.data || data;
+        // ── DIAGNOSTIC: Log the API response to help debug ──
+        console.log('PIN API response:', JSON.stringify(data, null, 2));
 
-        const id = memberData.id ?? memberData.member_id ?? memberData._id ?? '';
-        const name = memberData.name ?? memberData.member_name ?? memberData.full_name ?? 'Member';
-        const handicap = Number(memberData.handicap ?? memberData.hcp ?? memberData.handicap_index ?? 0);
-        const handicapUpdatedAt = memberData.handicap_updated_at ?? null;
+        // v3 hardening returns { id, name, handicap, member_type } directly
+        const memberData = data;
+
+        const id = memberData.id ?? '';
+        const name = memberData.name ?? 'Member';
+        const handicap = Number(memberData.handicap ?? 0);
 
         if (!id && !name) {
           console.error('Could not extract member data from API response:', data);
@@ -129,6 +129,8 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
           setPin(['', '', '', '']);
           return;
         }
+
+        console.log('Setting member:', { id: String(id), name, handicap });
 
         setAccessing(true);
 
@@ -138,7 +140,6 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
             id: String(id),
             name: String(name),
             handicap: handicap,
-            handicap_updated_at: handicapUpdatedAt
           });
         }, 400);
       } else {

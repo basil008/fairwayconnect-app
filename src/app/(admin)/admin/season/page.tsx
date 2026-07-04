@@ -148,10 +148,10 @@ export default function AdminSeasonPage() {
           </div>
         ) : (
           <div className="space-y-3">
-            {events.filter(e => e.status !== 'cancelled').map((event, index) => (
+            {events.filter(e => e.status !== 'cancelled').map(event => (
               <div key={event.id} className="bg-white rounded-2xl p-4 shadow-sm border border-gray-100 flex items-center gap-4">
                 <div className="w-12 h-12 bg-fairway-50 rounded-xl flex items-center justify-center text-lg font-bold text-fairway-900 flex-shrink-0">
-                  {index + 1}
+                  {event.event_number}
                 </div>
                 <div className="flex-1 min-w-0">
                   <div className="flex items-center gap-2">

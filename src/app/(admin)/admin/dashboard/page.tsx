@@ -20,8 +20,20 @@ export default function AdminDashboard() {
 
   useEffect(() => {
     if (!isAuth) return;
-    fetch('/api/admin/dashboard').then(r => r.json()).then(d => {
-      setData(d);
+    // Fetch dashboard data AND GOTY separately (same as member home)
+    Promise.all([
+      fetch('/api/admin/dashboard').then(r => r.json()),
+      fetch('/api/goty').then(r => r.json())
+    ]).then(([dashData, gotyData]) => {
+      // Get GOTY leader from standings (exact same logic as member home)
+      const leader = gotyData?.standings?.[0] || null;
+      setData({
+        ...dashData,
+        oomLeader: leader ? {
+          name: leader.name,
+          total_points: leader.total_points
+        } : null
+      });
       setLoading(false);
     }).catch(() => setLoading(false));
   }, [isAuth]);
@@ -163,13 +175,17 @@ export default function AdminDashboard() {
                 <p className="text-xs text-gray-500">💰 Collected</p>
                 <p className="text-2xl font-bold text-green-700 mt-1">€{data.revenue.collected.toLocaleString()}</p>
               </div>
-              {data.oomLeader && (
-                <div className="bg-white rounded-xl p-4 shadow-sm">
-                  <p className="text-xs text-gray-500">🏆 GOTY Leader</p>
-                  <p className="text-sm font-bold text-fairway-900 mt-1 truncate">{data.oomLeader.name}</p>
-                  <p className="text-xs text-gray-400">{data.oomLeader.total_points} pts</p>
-                </div>
-              )}
+              <div className="bg-white rounded-xl p-4 shadow-sm">
+                <p className="text-xs text-gray-500">🏆 GOTY Leader</p>
+                {data.oomLeader ? (
+                  <>
+                    <p className="text-sm font-bold text-fairway-900 mt-1 truncate">{data.oomLeader.name}</p>
+                    <p className="text-xs text-gray-400">{data.oomLeader.total_points} pts</p>
+                  </>
+                ) : (
+                  <p className="text-xs text-gray-400 mt-1">Loading...</p>
+                )}
+              </div>
             </div>
 
             {/* Quick Links */}

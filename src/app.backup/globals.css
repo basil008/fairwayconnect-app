@@ -1,0 +1,113 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --fairway-900: #1B5E20;
+  --fairway-800: #2E7D32;
+  --fairway-700: #388E3C;
+  --fairway-600: #43A047;
+  --fairway-100: #C8E6C9;
+  --fairway-50: #E8F5E9;
+}
+
+html {
+  -webkit-tap-highlight-color: transparent;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+  background-color: #F5F5F5;
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+}
+
+/* Bottom nav safe area */
+.pb-nav {
+  padding-bottom: calc(80px + env(safe-area-inset-bottom, 0px));
+}
+
+/* Pulsing live indicator */
+@keyframes pulse-live {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.4; }
+}
+.pulse-live {
+  animation: pulse-live 1.5s ease-in-out infinite;
+}
+
+/* Toast slide down */
+@keyframes slide-down {
+  from { opacity: 0; transform: translateY(-16px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.animate-slide-down {
+  animation: slide-down 0.3s ease-out;
+}
+
+/* Shake animation for wrong PIN */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-8px); }
+  20%, 40%, 60%, 80% { transform: translateX(8px); }
+}
+.animate-shake {
+  animation: shake 0.5s ease-in-out;
+}
+
+/* Score button animations */
+.score-btn {
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+  cursor: pointer;
+  touch-action: manipulation;
+  -webkit-user-select: none;
+  user-select: none;
+}
+.score-btn:active {
+  transform: scale(0.92);
+}
+
+button {
+  cursor: pointer;
+  touch-action: manipulation;
+}
+button:active:not(:disabled) {
+  opacity: 0.85;
+}
+
+/* Print styles */
+@media print {
+  .no-print { display: none !important; }
+  .pb-nav { padding-bottom: 0 !important; }
+  body { background: white !important; }
+  main { max-width: 100% !important; }
+  .shadow-sm, .shadow-md, .shadow-lg { box-shadow: none !important; }
+  .print-page-break { page-break-after: always; }
+  .print-no-break { page-break-inside: avoid; }
+}
+
+/* Smooth page transitions */
+main {
+  animation: fade-in 0.2s ease-out;
+}
+@keyframes fade-in {
+  from { opacity: 0.8; }
+  to { opacity: 1; }
+}
+
+/* Scrollbar hiding */
+.hide-scrollbar::-webkit-scrollbar { display: none; }
+.hide-scrollbar { -ms-overflow-style: none; scrollbar-width: none; }
+
+/* Tab styling */
+.tab-active {
+  border-bottom: 2px solid #1B5E20;
+  color: #1B5E20;
+  font-weight: 600;
+}
+
+/* Test site banner spacing */
+body {
+  padding-top: 0 !important;
+}
+

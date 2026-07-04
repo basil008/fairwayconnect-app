@@ -15,8 +15,7 @@ export async function POST(request: Request) {
   if (!event) return NextResponse.json({ error: 'Event not found' }, { status: 404 });
 
   const eventNumber = (event.event_number as number) || 1;
-  const safeEventNumber = Math.max(1, Math.min(8, Math.floor(Number(eventNumber)) || 1));
-  const outingCol = `outing_${safeEventNumber}`;
+  const outingCol = `outing_${eventNumber}`;
   const year = new Date().getFullYear();
   const courseName = event.course_name as string;
 

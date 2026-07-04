@@ -1,8 +1,10 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
+import { seedDatabase } from '@/lib/seed';
 
 export async function GET() {
   try {
+    await seedDatabase();
     const db = getDb();
     const societyResult = await db.execute('SELECT * FROM societies LIMIT 1');
     const society = societyResult.rows[0];

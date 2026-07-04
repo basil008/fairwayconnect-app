@@ -20,58 +20,32 @@ export async function GET() {
       });
     }
 
-    // Get prize allocations
+    // Get prize allocations exactly as Mac Mini shows them
     const resultsResult = await db.execute({
       sql: `
         SELECT pa.*, m.name as member_name, m.handicap
         FROM prize_allocations pa
         JOIN members m ON m.id = pa.member_id
         WHERE pa.event_id = ?
+        ORDER BY 
+          CASE pa.prize_type 
+            WHEN 'overall' THEN 1 
+            WHEN 'front_9' THEN 2 
+            WHEN 'back_9' THEN 3
+            WHEN 'twos' THEN 4 
+            WHEN 'ntp' THEN 5 
+            WHEN 'longest_drive' THEN 6
+            ELSE 9
+          END,
+          pa.position
       `,
       args: [event.id]
     });
-    
-    // Sort prizes in correct order (same logic as events/[id]/results)
-    const prizeOrder: Record<string, number> = {
-      'overall': 1,
-      'class_1': 2,
-      'class_2': 3,
-      'third_overall': 4,
-      'past_captains': 5,
-      'visitors': 6,
-      'ntp': 7,
-      'longest_drive': 8,
-      'twos': 9,
-      'front_9': 10,
-      'back_9': 11
-    };
-    
-    const prizes = resultsResult.rows as any[];
-    prizes.sort((a, b) => {
-      const orderA = prizeOrder[a.prize_type] || 99;
-      const orderB = prizeOrder[b.prize_type] || 99;
-      
-      // Special handling for class prizes: interleave by position first, then by class
-      const isClassA = a.prize_type === 'class_1' || a.prize_type === 'class_2';
-      const isClassB = b.prize_type === 'class_1' || b.prize_type === 'class_2';
-      
-      if (isClassA && isClassB) {
-        // Both are class prizes - sort by position first (1st place winners, then 2nd place winners)
-        if (a.position !== b.position) return (a.position || 0) - (b.position || 0);
-        // Within same position, class_1 comes before class_2
-        return a.prize_type === 'class_1' ? -1 : 1;
-      }
-      
-      if (orderA !== orderB) return orderA - orderB;
-      // Within same type, sort by position
-      if (a.position && b.position) return a.position - b.position;
-      return 0;
-    });
 
-    console.log(`✅ Results: ${prizes.length} prize allocations from ${event.course_name}`);
+    console.log(`✅ Results: ${resultsResult.rows.length} prize allocations from ${event.course_name}`);
 
     return NextResponse.json({
-      results: prizes,
+      results: resultsResult.rows,
       sideComps: [],
       event: {
         ...event,

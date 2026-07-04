@@ -8,7 +8,7 @@ export default function RedirectToMemberHome() {
   
   useEffect(() => {
     // Redirect to member home after successful authentication
-    router.push('/member-home');
+    router.push('/dashboard');
   }, [router]);
 
   return (

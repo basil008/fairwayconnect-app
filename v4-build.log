@@ -1,0 +1,129 @@
+
+> fairway-connect@0.1.0 build
+> next build
+
+   ▲ Next.js 15.5.20
+
+   Creating an optimized production build ...
+ ✓ Compiled successfully in 3.4s
+   Linting and checking validity of types ...
+   Collecting page data ...
+   Generating static pages (0/70) ...
+   Generating static pages (17/70) 
+   Generating static pages (34/70) 
+   Generating static pages (52/70) 
+ ✓ Generating static pages (70/70)
+   Finalizing page optimization ...
+   Collecting build traces ...
+
+Route (app)                                  Size  First Load JS
+┌ ƒ /                                     3.18 kB         106 kB
+├ ○ /_not-found                             999 B         103 kB
+├ ○ /admin                                1.24 kB         104 kB
+├ ○ /admin/adj-handicaps                  4.38 kB         107 kB
+├ ƒ /admin/captain-prize/[eventId]        1.75 kB         104 kB
+├ ○ /admin/courses                        3.11 kB         109 kB
+├ ○ /admin/dashboard                      2.84 kB         109 kB
+├ ○ /admin/engagement                     2.69 kB         105 kB
+├ ƒ /admin/event/[id]                     17.7 kB         123 kB
+├ ƒ /admin/event/[id]/print-scorecards    1.67 kB         104 kB
+├ ○ /admin/handicap-changes               2.44 kB         105 kB
+├ ○ /admin/handicaps                      2.11 kB         105 kB
+├ ○ /admin/members                        3.75 kB         106 kB
+├ ○ /admin/merit                          2.06 kB         104 kB
+├ ○ /admin/pricing                        4.69 kB         107 kB
+├ ○ /admin/publish                        3.07 kB         109 kB
+├ ○ /admin/results                         2.1 kB         105 kB
+├ ○ /admin/scorecards                     4.01 kB         110 kB
+├ ○ /admin/scoring                        3.13 kB         106 kB
+├ ○ /admin/season                         2.93 kB         109 kB
+├ ○ /admin/settings                       3.04 kB         105 kB
+├ ƒ /api/activity                           290 B         103 kB
+├ ƒ /api/admin/check-stale-handicaps        290 B         103 kB
+├ ƒ /api/admin/courses                      290 B         103 kB
+├ ƒ /api/admin/dashboard                    290 B         103 kB
+├ ƒ /api/admin/engagement/members           290 B         103 kB
+├ ƒ /api/admin/engagement/stats             290 B         103 kB
+├ ƒ /api/admin/events/[id]                  290 B         103 kB
+├ ƒ /api/admin/handicap-changes             290 B         103 kB
+├ ƒ /api/admin/prizes                       290 B         103 kB
+├ ƒ /api/admin/settings                     290 B         103 kB
+├ ƒ /api/admin/sync-event-data              290 B         103 kB
+├ ƒ /api/admin/validate-event-data          290 B         103 kB
+├ ƒ /api/admin/validate-members             290 B         103 kB
+├ ƒ /api/admin/verify-pin                   290 B         103 kB
+├ ƒ /api/auth/logout                        290 B         103 kB
+├ ƒ /api/auth/member-login                  290 B         103 kB
+├ ƒ /api/auth/session                       290 B         103 kB
+├ ƒ /api/calendar                           290 B         103 kB
+├ ƒ /api/captain-prize                      290 B         103 kB
+├ ƒ /api/course-scorecards                  290 B         103 kB
+├ ƒ /api/course-scorecards/list             290 B         103 kB
+├ ƒ /api/courses                            290 B         103 kB
+├ ƒ /api/deductions                         290 B         103 kB
+├ ƒ /api/event-detail/[id]                  290 B         103 kB
+├ ƒ /api/events                             290 B         103 kB
+├ ƒ /api/events-list                        290 B         103 kB
+├ ƒ /api/events/[id]/load-scorecard         290 B         103 kB
+├ ƒ /api/events/[id]/results                290 B         103 kB
+├ ƒ /api/events/[id]/tee-times              290 B         103 kB
+├ ƒ /api/events/create                      290 B         103 kB
+├ ƒ /api/finalise                           290 B         103 kB
+├ ƒ /api/goty                               290 B         103 kB
+├ ƒ /api/leaderboard                        290 B         103 kB
+├ ƒ /api/macmini-deductions                 290 B         103 kB
+├ ƒ /api/macmini-results                    290 B         103 kB
+├ ƒ /api/master-scorecards                  290 B         103 kB
+├ ƒ /api/master-scorecards/list             290 B         103 kB
+├ ƒ /api/member/[token]                     290 B         103 kB
+├ ƒ /api/member/[token]/handicap-history    290 B         103 kB
+├ ƒ /api/member/update-handicap             290 B         103 kB
+├ ƒ /api/members                            290 B         103 kB
+├ ƒ /api/members/delete                     290 B         103 kB
+├ ƒ /api/members/update                     290 B         103 kB
+├ ƒ /api/merit                              290 B         103 kB
+├ ƒ /api/player/[id]                        290 B         103 kB
+├ ƒ /api/recalculate-event                  290 B         103 kB
+├ ƒ /api/recalculate-scores                 290 B         103 kB
+├ ƒ /api/reset-event                        290 B         103 kB
+├ ƒ /api/reset-event-full                   290 B         103 kB
+├ ƒ /api/results                            290 B         103 kB
+├ ƒ /api/revert-event                       290 B         103 kB
+├ ƒ /api/rsvps                              290 B         103 kB
+├ ƒ /api/scan-scorecard                     290 B         103 kB
+├ ƒ /api/scorecards                         290 B         103 kB
+├ ƒ /api/scorecards/[id]                    290 B         103 kB
+├ ƒ /api/scorecards/[id]/reset              290 B         103 kB
+├ ƒ /api/seasons                            290 B         103 kB
+├ ƒ /api/seasons/recalculate                290 B         103 kB
+├ ƒ /api/settings/public                    290 B         103 kB
+├ ƒ /api/side-comps                         290 B         103 kB
+├ ƒ /api/society                            290 B         103 kB
+├ ƒ /api/stats                              290 B         103 kB
+├ ƒ /api/tee-times                          290 B         103 kB
+├ ○ /calendar                             2.46 kB         105 kB
+├ ○ /dashboard                            4.68 kB         110 kB
+├ ○ /downloads                              290 B         103 kB
+├ ƒ /event/[id]/results                   2.14 kB         108 kB
+├ ○ /goty                                  1.8 kB         108 kB
+├ ○ /leaderboard                           2.6 kB         108 kB
+├ ƒ /m/[token]                             1.1 kB         104 kB
+├ ○ /member-dashboard                       746 B         103 kB
+├ ○ /member-handicap                      2.96 kB         105 kB
+├ ○ /member-home                          4.35 kB         110 kB
+├ ○ /merit                                1.99 kB         108 kB
+├ ○ /pricing                              3.04 kB         105 kB
+├ ƒ /profile/[id]                         1.13 kB         107 kB
+├ ○ /results                              1.22 kB         107 kB
+└ ○ /scoring                              4.29 kB         110 kB
++ First Load JS shared by all              102 kB
+  ├ chunks/1255-d90f22433f14e976.js       46.3 kB
+  ├ chunks/4bd1b696-f785427dddbba9fb.js   54.2 kB
+  └ other shared chunks (total)           1.92 kB
+
+
+ƒ Middleware                              34.8 kB
+
+○  (Static)   prerendered as static content
+ƒ  (Dynamic)  server-rendered on demand
+
