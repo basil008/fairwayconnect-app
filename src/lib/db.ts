@@ -1,79 +1,98 @@
-import type { Client, InStatement, ResultSet, InValue } from '@libsql/client';
-// ⬆ TYPE-ONLY imports — erased at compile time. Nothing from @libsql loads here.
-//
-// WHY THIS FILE IS SHAPED THIS WAY (do not "simplify" it):
-// The @libsql/client *node* entry imports the `libsql` native binding at
-// module scope. Next.js standalone tracing does not reliably ship the
-// platform-specific binding (@libsql/linux-x64-musl on the Alpine container),
-// so a top-level `import '@libsql/client'` crashes EVERY route with 500s in
-// production. This took down the 2–3 July deployments.
-//
-// v107 worked on Alpine because it used '@libsql/client/web' — a pure-fetch
-// client with zero native code. We therefore:
-//   • import ONLY types statically,
-//   • use the WEB client for remote Turso URLs (production),
-//   • dynamically import the node client ONLY for local file: databases
-//     (Mac Mini dev / scripts), where the native binding is always present.
+import { createClient } from '@libsql/client/web';
+import Database from 'better-sqlite3';
 
-export type DbStatement = InStatement;
-export type { InValue };
+let db: Database.Database | null = null;
+let tursoClient: any = null;
+let compatibleClient: any = null;
 
-export interface DbClient {
-  execute(stmt: InStatement | string): Promise<ResultSet>;
-  batch(stmts: InStatement[], mode?: 'write' | 'read' | 'deferred'): Promise<ResultSet[]>;
+interface DbResult {
+  rows: any[];
 }
 
-let clientPromise: Promise<Client> | null = null;
-
-function resolveClient(): Promise<Client> {
-  if (clientPromise) return clientPromise;
-
-  clientPromise = (async (): Promise<Client> => {
-    const url = process.env.DATABASE_URL;
-    const authToken = process.env.DATABASE_AUTH_TOKEN;
-
-    if (!url) {
-      throw new Error('DATABASE_URL is not set');
-    }
-
-    if (!url.startsWith('libsql://') && !url.startsWith('https://') && !url.startsWith('wss://')) {
-      throw new Error(
-        `DATABASE_URL must be a remote Turso URL in deployed environments (got: ${url.split(':')[0]}:...)`
-      );
-    }
-
-    // Remote Turso — WEB client only, pure fetch.
-    // No native bindings, works on any container including Alpine/musl.
-    const { createClient } = await import('@libsql/client/web');
-    console.log('🌐 Connecting to Turso (web client, no native bindings)');
-    return createClient({ url, authToken });
-  })();
-
-  return clientPromise;
+interface DbClient {
+  execute(query: string | { sql: string; args?: any[] }): Promise<DbResult>;
 }
 
-// Synchronous facade so the hundreds of existing `const db = getDb()` call
-// sites are unchanged; the real client resolves on first use.
-const facade: DbClient = {
-  async execute(stmt: InStatement | string): Promise<ResultSet> {
-    const c = await resolveClient();
-    return c.execute(stmt as InStatement);
-  },
-  async batch(stmts: InStatement[], mode: 'write' | 'read' | 'deferred' = 'write'): Promise<ResultSet[]> {
-    const c = await resolveClient();
-    return c.batch(stmts, mode);
-  },
-};
+function createTursoClient(): DbClient {
+  if (!tursoClient) {
+    console.log('🌐 Connecting to Turso cloud database...');
+    tursoClient = createClient({
+      url: process.env.DATABASE_URL!,
+      authToken: process.env.DATABASE_AUTH_TOKEN!
+    });
+    console.log('✅ Connected to Turso database');
+  }
+  
+  return {
+    execute: async (query: string | { sql: string; args?: any[] }) => {
+      const sql = typeof query === 'string' ? query : query.sql;
+      const args = typeof query === 'string' ? [] : (query.args || []);
+      
+      const result = await tursoClient.execute({ sql, args });
+      return { rows: result.rows };
+    }
+  };
+}
+
+function createLocalClient(): DbClient {
+  if (!db) {
+    const dbPath = './database/fairway-local.db';
+    console.log(`🗄️ Connecting to local database: ${dbPath}`);
+    
+    try {
+      db = new Database(dbPath);
+      db.pragma('journal_mode = WAL');
+      console.log('✅ Connected to local SQLite database');
+    } catch (error) {
+      console.error('❌ Failed to connect to database:', error);
+      throw error;
+    }
+  }
+  
+  const database = db;
+  
+  return {
+    execute: async (query: string | { sql: string; args?: any[] }) => {
+      const sql = typeof query === 'string' ? query : query.sql;
+      const args = typeof query === 'string' ? [] : (query.args || []);
+      
+      const stmt = database.prepare(sql);
+      
+      // Auto-detect: UPDATE/INSERT/DELETE use run(), SELECT uses all()
+      const isWrite = /^\s*(UPDATE|INSERT|DELETE|CREATE|DROP|ALTER)/i.test(sql);
+      
+      if (isWrite) {
+        const result = args.length > 0 ? stmt.run(...args) : stmt.run();
+        return { rows: [] }; // Write operations return empty rows
+      } else {
+        const rows = args.length > 0 ? stmt.all(...args) : stmt.all();
+        return { rows };
+      }
+    }
+  };
+}
 
 export function getDb(): DbClient {
-  return facade;
+  if (!compatibleClient) {
+    // Production: Use Turso if DATABASE_URL is set
+    if (process.env.DATABASE_URL && process.env.DATABASE_AUTH_TOKEN) {
+      console.log('📍 Environment: Production (Turso)');
+      compatibleClient = createTursoClient();
+    } else {
+      // Local development: Use better-sqlite3
+      console.log('📍 Environment: Local Development (SQLite)');
+      compatibleClient = createLocalClient();
+    }
+  }
+  return compatibleClient;
 }
 
-/**
- * Execute a set of write statements ATOMICALLY.
- * If any statement fails, none are applied.
- */
-export async function executeBatch(statements: DbStatement[]): Promise<void> {
-  if (statements.length === 0) return;
-  await facade.batch(statements, 'write');
+export async function initializeDb() {
+  console.log('Using exported production database - skipping initialization');
+  return;
+}
+
+export async function migrateDeductions() {
+  console.log('Using exported production database - skipping deduction migration');
+  return;
 }

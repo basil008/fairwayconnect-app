@@ -6,7 +6,6 @@ interface MemberIdentity {
   id: string;
   name: string;
   handicap: number;
-  handicap_updated_at?: string | null;
 }
 
 interface MemberContextType {
@@ -33,14 +32,8 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
       const id = localStorage.getItem('fc_member_id');
       const name = localStorage.getItem('fc_member_name');
       const handicap = localStorage.getItem('fc_member_handicap');
-      const handicapUpdatedAt = localStorage.getItem('fc_member_handicap_updated_at');
       if (id && name) {
-        setMemberState({ 
-          id, 
-          name, 
-          handicap: Number(handicap) || 0,
-          handicap_updated_at: handicapUpdatedAt
-        });
+        setMemberState({ id, name, handicap: Number(handicap) || 0 });
       }
     }
     setLoaded(true);
@@ -51,9 +44,6 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
       localStorage.setItem('fc_member_id', m.id);
       localStorage.setItem('fc_member_name', m.name);
       localStorage.setItem('fc_member_handicap', String(m.handicap));
-      if (m.handicap_updated_at) {
-        localStorage.setItem('fc_member_handicap_updated_at', m.handicap_updated_at);
-      }
     }
     setMemberState(m);
   }, []);
@@ -63,7 +53,6 @@ export function MemberProvider({ children }: { children: React.ReactNode }) {
       localStorage.removeItem('fc_member_id');
       localStorage.removeItem('fc_member_name');
       localStorage.removeItem('fc_member_handicap');
-      localStorage.removeItem('fc_member_handicap_updated_at');
     }
     setMemberState(null);
   }, []);

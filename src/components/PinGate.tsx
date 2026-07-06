@@ -104,11 +104,7 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
     setVerifying(true);
     setError('');
     try {
-      const res = await fetch('/api/auth/member-login', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ pin: code }),
-      });
+      const res = await fetch(`/api/member-pin/${code}`);
 
       if (res.ok) {
         const data = await res.json();
@@ -116,12 +112,14 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
         // ── DIAGNOSTIC: Log the API response to help debug ──
         console.log('PIN API response:', JSON.stringify(data, null, 2));
 
-        // v3 hardening returns { id, name, handicap, member_type } directly
-        const memberData = data;
+        // ── DEFENSIVE: Handle multiple possible response shapes ──
+        // The API might return { id, name, handicap } directly
+        // or wrapped as { member: { ... } } or { data: { ... } }
+        const memberData = data.member || data.data || data;
 
-        const id = memberData.id ?? '';
-        const name = memberData.name ?? 'Member';
-        const handicap = Number(memberData.handicap ?? 0);
+        const id = memberData.id ?? memberData.member_id ?? memberData._id ?? '';
+        const name = memberData.name ?? memberData.member_name ?? memberData.full_name ?? 'Member';
+        const handicap = Number(memberData.handicap ?? memberData.hcp ?? memberData.handicap_index ?? 0);
 
         if (!id && !name) {
           console.error('Could not extract member data from API response:', data);

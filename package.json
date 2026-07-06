@@ -6,13 +6,13 @@
     "dev": "next dev -p 3336",
     "build": "next build",
     "start": "next start -p 3336",
-    "migrate": "npx tsx scripts/migrate.ts",
-    "test": "vitest run"
+    "seed": "npx tsx src/lib/seed.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",
-    "@libsql/client": "^0.17.4",
-    "next": "^15.5.20",
+    "@libsql/client": "^0.14.0",
+    "better-sqlite3": "^12.9.0",
+    "next": "^15.1.0",
     "react": "^19.0.0",
     "react-dom": "^19.0.0",
     "uuid": "^11.1.0"
@@ -25,8 +25,6 @@
     "autoprefixer": "^10.4.0",
     "postcss": "^8.4.0",
     "tailwindcss": "^3.4.0",
-    "tsx": "^4.22.4",
-    "typescript": "^5.7.0",
-    "vitest": "^4.1.9"
+    "typescript": "^5.7.0"
   }
 }

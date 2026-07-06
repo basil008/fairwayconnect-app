@@ -1,5 +1,3 @@
-'use client';
-
 import { MemberProvider } from '@/lib/MemberContext';
 
 export default function MemberHandicapLayout({

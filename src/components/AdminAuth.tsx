@@ -9,22 +9,17 @@ export function useAdminAuth() {
   const router = useRouter();
 
   useEffect(() => {
-    // The server middleware is the real gate; this hook just drives the UI.
-    fetch('/api/auth/session')
-      .then(r => r.json())
-      .then(s => {
-        if (s.authenticated && s.role === 'admin') {
-          setIsAuth(true);
-        } else {
-          router.replace('/admin');
-        }
-      })
-      .catch(() => router.replace('/admin'))
-      .finally(() => setChecking(false));
+    const auth = sessionStorage.getItem('admin_auth');
+    if (auth === 'true') {
+      setIsAuth(true);
+    } else {
+      router.replace('/');
+    }
+    setChecking(false);
   }, [router]);
 
-  const logout = async () => {
-    await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
+  const logout = () => {
+    sessionStorage.removeItem('admin_auth');
     localStorage.removeItem('fairway_remembered_user');
     router.replace('/');
   };
@@ -32,7 +27,7 @@ export function useAdminAuth() {
   return { isAuth, checking, logout };
 }
 
-export function AdminHeader({ title = 'Admin', onLock }: { title?: string; onLock?: () => void } = {}) {
+export function AdminHeader({ title, onLock }: { title: string; onLock: () => void }) {
   return (
     <div className="bg-fairway-900 text-white px-4 py-3 flex items-center justify-between sticky top-0 z-40">
       <div>
@@ -41,20 +36,17 @@ export function AdminHeader({ title = 'Admin', onLock }: { title?: string; onLoc
       </div>
       <div className="flex items-center gap-2">
         <button
-          onClick={async () => {
+          onClick={() => {
             // Clear admin session and go to member view
-            await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-            window.location.href = '/';
+            sessionStorage.removeItem('admin_auth')
+            window.location.href = '/'
           }}
           className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
         >
           🏠 Member View
         </button>
         <button
-          onClick={onLock ?? (async () => {
-            await fetch('/api/auth/logout', { method: 'POST' }).catch(() => {});
-            window.location.href = '/admin';
-          })}
+          onClick={onLock}
           className="flex items-center gap-1.5 bg-white/10 hover:bg-white/20 rounded-lg px-3 py-1.5 text-sm font-medium transition-colors"
         >
           🔒 Lock
@@ -72,7 +64,6 @@ export function AdminNav({ current }: { current: string }) {
     { href: '/admin/members', label: 'Members', icon: '👥' },
     { href: '/admin/handicaps', label: 'Handicaps', icon: '⛳' },
     { href: '/admin/adj-handicaps', label: 'Adj Hcaps', icon: '📉' },
-    { href: '/admin/handicap-changes', label: 'H/C Changes', icon: '🔄' },
     { href: '/admin/merit', label: 'GOTY', icon: '🏆' },
     { href: '/admin/pricing', label: 'Pricing', icon: '💰' },
     { href: '/admin/settings', label: 'Settings', icon: '⚙️' },
