@@ -3,12 +3,10 @@ import { getDb } from '@/lib/db';
 import { InValue } from '@libsql/client';
 
 export async function POST(req: NextRequest) {
-  try {
-    const db = getDb();
-    const body = await req.json();
-    console.log('[MEMBER UPDATE] Received body:', JSON.stringify(body));
-    const { id } = body;
-    if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
+  const db = getDb();
+  const body = await req.json();
+  const { id } = body;
+  if (!id) return NextResponse.json({ error: 'ID required' }, { status: 400 });
 
   const fields: string[] = [];
   const values: InValue[] = [];
@@ -19,18 +17,10 @@ export async function POST(req: NextRequest) {
   if (body.phone !== undefined) { fields.push('phone = ?'); values.push(body.phone); }
   if (body.member_type !== undefined) { fields.push('member_type = ?'); values.push(body.member_type); }
   if (body.status !== undefined) { fields.push('status = ?'); values.push(body.status); }
-  // Accept both 'pin' and 'member_pin' for backwards compatibility
-  const pinValue = body.pin !== undefined ? body.pin : body.member_pin;
-  console.log('[MEMBER UPDATE] PIN check - body.pin:', body.pin, 'body.member_pin:', body.member_pin, 'pinValue:', pinValue);
-  if (pinValue !== undefined) { 
-    fields.push('member_pin = ?');  // Database column is member_pin, not pin
-    values.push(pinValue); 
-    console.log('[MEMBER UPDATE] Added member_pin to update');
-  }
+  if (body.member_pin !== undefined) { fields.push('member_pin = ?'); values.push(body.member_pin); }
+  if (body.pin !== undefined) { fields.push('member_pin = ?'); values.push(body.pin); }
 
   if (fields.length === 0) return NextResponse.json({ error: 'No fields to update' }, { status: 400 });
-
-  console.log('[MEMBER UPDATE] Updating member', id, 'with fields:', fields.join(', '));
 
   values.push(id);
   await db.execute({
@@ -83,13 +73,5 @@ export async function POST(req: NextRequest) {
     }
   }
 
-    console.log('[MEMBER UPDATE] Update successful');
-    return NextResponse.json({ success: true });
-  } catch (error: any) {
-    console.error('[MEMBER UPDATE] Error:', error);
-    return NextResponse.json({ 
-      error: error.message || 'Update failed',
-      details: error.toString()
-    }, { status: 500 });
-  }
+  return NextResponse.json({ success: true });
 }

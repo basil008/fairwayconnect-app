@@ -4,10 +4,7 @@ const nextConfig: NextConfig = {
   output: 'standalone',
   serverExternalPackages: ['@libsql/client'],
   typescript: {
-    ignoreBuildErrors: true,
-  },
-  eslint: {
-    ignoreDuringBuilds: true,
+    ignoreBuildErrors: true,  // Temporarily for deployment
   },
 };
 

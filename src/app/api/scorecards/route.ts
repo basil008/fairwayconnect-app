@@ -46,7 +46,7 @@ export async function GET(request: Request) {
     sql: `
       SELECT s.*, m.name, m.handicap, m.member_type
       FROM scorecards s JOIN members m ON m.id = s.member_id
-      WHERE s.event_id = ?
+      WHERE s.event_id = ? AND (m.member_type IS NULL OR m.member_type != 'visitor')
       ORDER BY s.total_points DESC
     `,
     args: [eventId]
@@ -60,6 +60,34 @@ export async function POST(request: Request) {
   const db = getDb();
   const body = await request.json();
   const { event_id, member_id, scores, entry_method, scan_image_path } = body;
+
+  // Validate that member has RSVP'd for this event
+  const rsvpResult = await db.execute({
+    sql: 'SELECT id, status, can_enter_scores FROM rsvps WHERE event_id = ? AND member_id = ?',
+    args: [event_id, member_id]
+  });
+  const rsvp = rsvpResult.rows[0] as unknown as { id: string; status: string; can_enter_scores: number } | undefined;
+  
+  if (!rsvp) {
+    return NextResponse.json({ 
+      error: 'Not authorized', 
+      message: 'You must RSVP for this event before entering scores' 
+    }, { status: 403 });
+  }
+  
+  if (rsvp.status !== 'confirmed') {
+    return NextResponse.json({ 
+      error: 'Not authorized', 
+      message: 'Only confirmed attendees can enter scores' 
+    }, { status: 403 });
+  }
+  
+  if (rsvp.can_enter_scores !== 1) {
+    return NextResponse.json({ 
+      error: 'Not authorized', 
+      message: 'Score entry has been disabled for you by the admin. Please contact your organiser.' 
+    }, { status: 403 });
+  }
 
   // Validate that event exists and get WHS settings
   const eventResult = await db.execute({ 

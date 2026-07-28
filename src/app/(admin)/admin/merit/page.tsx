@@ -3,167 +3,91 @@
 import { useEffect, useState } from 'react';
 import { useAdminAuth, AdminHeader, AdminNav } from '@/components/AdminAuth';
 
-interface GOTYEntry {
-  position: number;
-  member_id: string;
-  name: string;
-  handicap: number;
-  total_points: number;
-  events_played: number;
-  counting_events: number;
-  best_score: number;
-  breakdown: Array<{
-    event_id: string;
-    event_name: string;
-    event_date: string;
-    points: number;
-    counting: boolean;
-  }>;
+interface Standing {
+  member_id: string; name: string; handicap: number; total_points: number;
+  events_played: number; best_finish: number; wins: number; position: number;
 }
 
 export default function AdminMeritPage() {
   const { isAuth, checking, logout } = useAdminAuth();
-  const [standings, setStandings] = useState<GOTYEntry[]>([]);
-  const [totalEvents, setTotalEvents] = useState(0);
-  const [eventNames, setEventNames] = useState<string[]>([]);
-  const [season] = useState(new Date().getFullYear().toString());
+  const [standings, setStandings] = useState<Standing[]>([]);
   const [loading, setLoading] = useState(true);
+  const [recalculating, setRecalculating] = useState(false);
 
-  useEffect(() => {
-    if (!isAuth) return;
-    fetch(`/api/goty?season=${season}&limit=100`)
-      .then(r => r.json())
-      .then(data => {
-        const s = data.standings || [];
-        setStandings(s);
-        setTotalEvents(data.total_events || 0);
-        // Extract unique event names in date order from all breakdowns
-        const evtMap = new Map<string, string>();
-        for (const entry of s) {
-          for (const b of entry.breakdown) {
-            if (!evtMap.has(b.event_id)) evtMap.set(b.event_id, b.event_name);
-          }
-        }
-        const uniqueEvents = s.length > 0
-          ? s[0].breakdown.sort((a: any, b: any) => a.event_date.localeCompare(b.event_date)).map((b: any) => b.event_name)
-          : [];
-        setEventNames(uniqueEvents);
-        setLoading(false);
-      })
-      .catch(() => setLoading(false));
-  }, [isAuth, season]);
+  const loadData = () => {
+    fetch('/api/goty').then(r => r.json()).then(data => {
+      console.log('GOTY data:', data);
+      // Convert API format to expected format
+      const converted = (data.standings || []).map((p: any) => ({
+        member_id: p.member_id,
+        name: p.name,
+        handicap: p.handicap,
+        total_points: p.total_points,
+        events_played: p.events_played,
+        best_finish: p.best_score,
+        wins: 0, // TODO: Calculate from tournament results
+        position: p.position
+      }));
+      setStandings(converted);
+      setLoading(false);
+    }).catch(() => setLoading(false));
+  };
+
+  useEffect(() => { if (isAuth) loadData(); }, [isAuth]);
+
+  const handleRecalculate = async () => {
+    setRecalculating(true);
+    await fetch('/api/seasons/recalculate', { method: 'POST' });
+    loadData();
+    setRecalculating(false);
+  };
 
   if (checking || !isAuth) return null;
-
-  const getMedal = (pos: number) => {
-    if (pos === 1) return '🥇';
-    if (pos === 2) return '🥈';
-    if (pos === 3) return '🥉';
-    return pos;
-  };
-
-  const shortEvent = (evt: string) => {
-    return evt.replace(' Golf Club', '').replace('Golf Club', '').substring(0, 12);
-  };
-
-  const shortName = (name: string) => {
-    const parts = name.trim().split(/\s+/);
-    if (parts.length === 1) return name;
-    const first = parts[0];
-    const last = parts[parts.length - 1];
-    return `${first} ${last}`;
-  };
 
   return (
     <div>
       <AdminHeader title="Order of Merit" onLock={logout} />
       <AdminNav current="/admin/merit" />
 
-      <div className="max-w-7xl mx-auto px-4 py-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-bold text-fairway-900">2026 Season Standings</h1>
-          <p className="text-sm text-gray-600 mt-1">
-            Best 6 scores count | {standings.length} players
-          </p>
+      <div className="max-w-4xl mx-auto px-4 py-6">
+        <div className="flex items-center justify-between mb-4">
+          <h2 className="text-lg font-bold text-gray-900">2026 Season Standings</h2>
+          <button onClick={handleRecalculate} disabled={recalculating}
+            className="bg-fairway-900 text-white px-4 py-2 rounded-xl text-sm font-medium disabled:opacity-50">
+            {recalculating ? 'Recalculating...' : '🔄 Recalculate'}
+          </button>
         </div>
 
         {loading ? (
-          <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-            <p className="text-gray-400">Loading...</p>
-          </div>
-        ) : standings.length === 0 ? (
-          <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-            <p className="text-gray-400">No results yet for {season}</p>
+          <div className="space-y-2">
+            {Array.from({ length: 5 }, (_, i) => <div key={i} className="h-14 bg-gray-200 rounded-xl animate-pulse" />)}
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm overflow-x-auto">
-            <table className="w-full border-collapse text-sm">
+          <div className="bg-white rounded-2xl shadow-sm overflow-hidden">
+            <table className="w-full text-sm">
               <thead>
-                <tr className="bg-fairway-900 text-white">
-                  <th className="px-2 py-3 text-left text-xs font-bold w-8">#</th>
-                  <th className="px-2 py-3 text-left text-xs font-bold min-w-[140px]">Player</th>
-                  <th className="px-3 py-3 text-center text-xs font-bold w-16 bg-yellow-600">
-                    Total<br /><span className="text-[9px] font-normal">(Best 6)</span>
-                  </th>
-
-                  {eventNames.map((evt, idx) => (
-                    <th key={evt} className="px-2 py-3 text-center text-xs font-bold min-w-[60px]" title={evt}>
-                      <div>Evt {idx + 1}</div>
-                      <div className="text-[9px] font-normal opacity-75">{shortEvent(evt)}</div>
-                    </th>
-                  ))}
-                  <th className="px-2 py-3 text-center text-xs font-bold w-14">Played</th>
+                <tr className="bg-gray-50 text-gray-600 text-xs">
+                  <th className="text-center px-2 py-2 w-10">#</th>
+                  <th className="text-left px-4 py-2">Player</th>
+                  <th className="text-center px-2 py-2">Hcp</th>
+                  <th className="text-center px-2 py-2">Events</th>
+                  <th className="text-center px-2 py-2">Best</th>
+                  <th className="text-center px-2 py-2">Points</th>
                 </tr>
               </thead>
               <tbody>
-                {standings.map((entry, i) => {
-                  const isTop3 = entry.position <= 3;
-                  return (
-                    <tr key={entry.member_id} className={`border-b border-gray-100 ${isTop3 ? 'bg-yellow-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="px-2 py-2.5 text-center font-bold text-gray-500">
-                        {getMedal(entry.position)}
-                      </td>
-                      <td className="px-2 py-2.5">
-                        <span className={`font-semibold ${isTop3 ? 'text-fairway-900' : 'text-gray-800'}`}>
-                          {shortName(entry.name)}
-                        </span>
-                      </td>
-                      <td className={`px-3 py-2.5 text-center font-bold text-lg ${isTop3 ? 'text-fairway-900' : 'text-gray-800'}`}
-                        style={isTop3 ? { background: 'rgba(234, 179, 8, 0.15)' } : {}}>
-                        {entry.total_points}
-                      </td>
-
-                      {eventNames.map((evt, evtIdx) => {
-                        const score = entry.breakdown.find(b => b.event_name === evt);
-                        // Calculate running total: best 6 of scores up to and including this event
-                        const scoresUpToHere = entry.breakdown
-                          .filter(b => eventNames.indexOf(b.event_name) <= evtIdx)
-                          .map(b => b.points)
-                          .sort((a, b) => b - a)
-                          .slice(0, 6);
-                        const runningTotal = scoresUpToHere.reduce((s, p) => s + p, 0);
-                        if (!score) {
-                          return <td key={evt} className="px-2 py-2.5 text-center text-gray-300 text-xs">—</td>;
-                        }
-                        return (
-                          <td key={evt} className="px-2 py-2.5 text-center">
-                            <span className={`inline-block min-w-[28px] px-1 py-0.5 rounded text-xs font-semibold ${
-                              score.counting
-                                ? 'bg-green-100 text-green-800'
-                                : 'text-gray-400'
-                            }`}>
-                              {score.points}
-                            </span>
-                            <div className="text-[9px] text-gray-400 mt-0.5">{runningTotal}</div>
-                          </td>
-                        );
-                      })}
-                      <td className="px-2 py-2.5 text-center text-xs text-gray-600">
-                        {entry.events_played}
-                      </td>
-                    </tr>
-                  );
-                })}
+                {standings.map((s, i) => (
+                  <tr key={s.member_id} className={i > 0 ? 'border-t border-gray-50' : ''}>
+                    <td className="px-2 py-2.5 text-center">
+                      {i === 0 ? '🥇' : i === 1 ? '🥈' : i === 2 ? '🥉' : <span className="text-gray-400">{i + 1}</span>}
+                    </td>
+                    <td className="px-4 py-2.5 font-medium">{s.name}</td>
+                    <td className="px-2 py-2.5 text-center text-gray-500">{s.handicap}</td>
+                    <td className="px-2 py-2.5 text-center">{s.events_played}</td>
+                    <td className="px-2 py-2.5 text-center">{s.best_finish === 99 ? '-' : s.best_finish}</td>
+                    <td className="px-2 py-2.5 text-center font-bold text-fairway-900">{s.total_points}</td>
+                  </tr>
+                ))}
               </tbody>
             </table>
           </div>

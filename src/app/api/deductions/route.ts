@@ -1,6 +1,5 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
-import Database from 'better-sqlite3';
 
 export async function GET(request: Request) {
   try {
@@ -142,39 +141,43 @@ export async function POST(request: Request) {
       return NextResponse.json({ error: 'Invalid action' }, { status: 400 });
     }
 
-    // Get direct database connection for write operations
-    const dbPath = './database/fairway-local.db';
-    const db = new Database(dbPath);
+    // Get database connection (Turso in production, SQLite locally)
+    const db = getDb();
 
     // Get member name from members table using id
-    const memberStmt = db.prepare('SELECT name FROM members WHERE id = ?');
-    const member = memberStmt.get(id) as any;
+    const memberResult = await db.execute({
+      sql: 'SELECT name FROM members WHERE id = ?',
+      args: [id]
+    });
     
-    if (!member) {
+    if (!memberResult.rows || memberResult.rows.length === 0) {
       return NextResponse.json({ error: 'Member not found' }, { status: 404 });
     }
+    
+    const member = memberResult.rows[0] as any;
 
     // Extract last name (member_deductions uses last name only)
     const lastName = member.name.split(' ').pop()?.trim() || '';
     const currentYear = year || new Date().getFullYear();
 
     // Check if deduction record exists
-    const checkStmt = db.prepare(
-      'SELECT id FROM member_deductions WHERE member_name = ? AND year = ?'
-    );
-    const existing = checkStmt.get(lastName, currentYear) as any;
+    const checkResult = await db.execute({
+      sql: 'SELECT id FROM member_deductions WHERE member_name = ? AND year = ?',
+      args: [lastName, currentYear]
+    });
 
-    if (!existing) {
+    if (!checkResult.rows || checkResult.rows.length === 0) {
       // Create new record
-      const insertStmt = db.prepare(`
-        INSERT INTO member_deductions (
-          id, member_name, first_name, year, year_starting_deduction,
-          outing_1, outing_2, outing_3, outing_4, outing_5, outing_6, outing_7, outing_8
-        ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0)
-      `);
       const firstName = member.name.split(' ').slice(0, -1).join(' ') || '';
       const newId = `ded_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`;
-      insertStmt.run(newId, lastName, firstName, currentYear, 0);
+      
+      await db.execute({
+        sql: `INSERT INTO member_deductions (
+          id, member_name, first_name, year, year_starting_deduction,
+          outing_1, outing_2, outing_3, outing_4, outing_5, outing_6, outing_7, outing_8
+        ) VALUES (?, ?, ?, ?, ?, 0, 0, 0, 0, 0, 0, 0, 0)`,
+        args: [newId, lastName, firstName, currentYear, 0]
+      });
     }
 
     // Validate field name to prevent SQL injection
@@ -188,14 +191,10 @@ export async function POST(request: Request) {
     }
 
     // Update the specific field
-    const updateStmt = db.prepare(`
-      UPDATE member_deductions 
-      SET ${field} = ? 
-      WHERE member_name = ? AND year = ?
-    `);
-    updateStmt.run(value, lastName, currentYear);
-
-    db.close();
+    await db.execute({
+      sql: `UPDATE member_deductions SET ${field} = ? WHERE member_name = ? AND year = ?`,
+      args: [value, lastName, currentYear]
+    });
 
     console.log(`✅ Updated ${lastName} ${field} = ${value}`);
 

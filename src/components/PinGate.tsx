@@ -120,6 +120,7 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
         const id = memberData.id ?? memberData.member_id ?? memberData._id ?? '';
         const name = memberData.name ?? memberData.member_name ?? memberData.full_name ?? 'Member';
         const handicap = Number(memberData.handicap ?? memberData.hcp ?? memberData.handicap_index ?? 0);
+        const handicapUpdatedAt = memberData.handicap_updated_at ?? null;
 
         if (!id && !name) {
           console.error('Could not extract member data from API response:', data);
@@ -138,6 +139,7 @@ export default function PinGate({ children }: { children: React.ReactNode }) {
             id: String(id),
             name: String(name),
             handicap: handicap,
+            handicap_updated_at: handicapUpdatedAt
           });
         }, 400);
       } else {

@@ -50,16 +50,19 @@ export default function ScoringPage() {
         return;
       }
       setHoles(data.holes || []);
-      setEventId(data.id);
+      const currentEventId = data.id;
+      setEventId(currentEventId);
       setEventStatus(data.status);
       setEventName(data.name);
       setCourseName(data.course_name);
-    });
-    fetch('/api/rsvps').then(r => r.json()).then(rsvps => {
-      const confirmed = (rsvps || []).filter((r: { status: string }) => r.status === 'confirmed');
-      setPlayers(confirmed.sort((a: any, b: any) => { const sA = (a.name||'').trim().split(' ').slice(-1)[0]; const sB = (b.name||'').trim().split(' ').slice(-1)[0]; return sA.localeCompare(sB); }).map((r: { member_id: string; name: string; handicap: number; can_enter_scores?: number }) => ({
-        id: r.member_id, name: r.name, handicap: r.handicap, can_enter_scores: r.can_enter_scores ?? 1
-      })));
+      
+      // Fetch RSVPs ONLY for the current event
+      fetch(`/api/rsvps?event_id=${currentEventId}`).then(r => r.json()).then(rsvps => {
+        const confirmed = (rsvps || []).filter((r: { status: string }) => r.status === 'confirmed');
+        setPlayers(confirmed.sort((a: any, b: any) => { const sA = (a.name||'').trim().split(' ').slice(-1)[0]; const sB = (b.name||'').trim().split(' ').slice(-1)[0]; return sA.localeCompare(sB); }).map((r: { member_id: string; name: string; handicap: number; can_enter_scores?: number }) => ({
+          id: r.member_id, name: r.name, handicap: r.handicap, can_enter_scores: r.can_enter_scores ?? 1
+        })));
+      });
     });
     // Check if member scoring is enabled
     fetch('/api/admin/settings').then(r => r.json()).then(settings => {
@@ -124,6 +127,17 @@ export default function ScoringPage() {
   }, [player, holes, scores, eventId, selectedPlayer]);
 
   const submitScorecard = async () => {
+    // Confirmation dialog before submitting
+    const confirmed = window.confirm(
+      '⚠️ Are you sure all the scores are correct?\n\n' +
+      'Please double-check your scorecard before submitting.\n\n' +
+      'Click OK to submit, or Cancel to review.'
+    );
+    
+    if (!confirmed) {
+      return; // User cancelled, don't submit
+    }
+    
     setSaving(true);
     try {
       const allScores = Array.from(scores.values()).map(s => ({ hole_number: s.hole_number, gross_score: s.gross_score }));

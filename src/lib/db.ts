@@ -1,7 +1,6 @@
 import { createClient } from '@libsql/client/web';
-import Database from 'better-sqlite3';
 
-let db: Database.Database | null = null;
+let db: any | null = null;
 let tursoClient: any = null;
 let compatibleClient: any = null;
 
@@ -13,46 +12,14 @@ interface DbClient {
   execute(query: string | { sql: string; args?: any[] }): Promise<DbResult>;
 }
 
-function createTursoClient(): DbClient {
-  if (!tursoClient) {
-    console.log('🌐 Connecting to Turso cloud database...');
-    tursoClient = createClient({
-      url: process.env.DATABASE_URL!,
-      authToken: process.env.DATABASE_AUTH_TOKEN!
-    });
-    console.log('✅ Connected to Turso database');
-  }
-  
-  return {
-    execute: async (query: string | { sql: string; args?: any[] }) => {
-      const sql = typeof query === 'string' ? query : query.sql;
-      const args = typeof query === 'string' ? [] : (query.args || []);
-      
-      const result = await tursoClient.execute({ sql, args });
-      return { rows: result.rows };
-    }
-  };
-}
-
-function createLocalClient(): DbClient {
+function createCompatibleClient(): DbClient {
   if (!db) {
-    const dbPath = './database/fairway-local.db';
-    console.log(`🗄️ Connecting to local database: ${dbPath}`);
-    
-    try {
-      db = new Database(dbPath);
-      db.pragma('journal_mode = WAL');
-      console.log('✅ Connected to local SQLite database');
-    } catch (error) {
-      console.error('❌ Failed to connect to database:', error);
-      throw error;
-    }
+    throw new Error('Database not initialized');
   }
-  
   const database = db;
   
   return {
-    execute: async (query: string | { sql: string; args?: any[] }) => {
+    execute: async (query: string | { sql: string; args?: any[] }): Promise<DbResult> => {
       const sql = typeof query === 'string' ? query : query.sql;
       const args = typeof query === 'string' ? [] : (query.args || []);
       
@@ -73,18 +40,49 @@ function createLocalClient(): DbClient {
 }
 
 export function getDb(): DbClient {
-  if (!compatibleClient) {
-    // Production: Use Turso if DATABASE_URL is set
-    if (process.env.DATABASE_URL && process.env.DATABASE_AUTH_TOKEN) {
-      console.log('📍 Environment: Production (Turso)');
-      compatibleClient = createTursoClient();
-    } else {
-      // Local development: Use better-sqlite3
-      console.log('📍 Environment: Local Development (SQLite)');
-      compatibleClient = createLocalClient();
+  // Check if we're on Fly.io (production) or local
+  const tursoUrl = process.env.TURSO_DATABASE_URL || process.env.DATABASE_URL;
+  const tursoToken = process.env.TURSO_AUTH_TOKEN || process.env.DATABASE_AUTH_TOKEN;
+  const isProduction = tursoUrl && tursoToken;
+
+  if (isProduction) {
+    // Use Turso cloud database
+    if (!tursoClient) {
+      console.log('🌐 Connecting to Turso cloud database...');
+      console.log(`📍 URL: ${tursoUrl?.substring(0, 30)}...`);
+      try {
+        tursoClient = createClient({
+          url: tursoUrl!,
+          authToken: tursoToken!
+          // No syncUrl - forces remote-only mode (no embedded replica)
+        });
+        console.log('✅ Connected to Turso cloud database (primary mode)');
+      } catch (error) {
+        console.error('❌ Failed to connect to Turso:', error);
+        throw error;
+      }
     }
+    return tursoClient;
+  } else {
+    // Use local SQLite database
+    if (!compatibleClient) {
+      if (!db) {
+        const dbPath = './database/fairway-local.db';
+        console.log(`🗄️ Connecting to local database: ${dbPath}`);
+        
+        try {
+          db = new Database(dbPath);
+          db.pragma('journal_mode = WAL');
+          console.log('✅ Connected to local SQLite database');
+        } catch (error) {
+          console.error('❌ Failed to connect to database:', error);
+          throw error;
+        }
+      }
+      compatibleClient = createCompatibleClient();
+    }
+    return compatibleClient;
   }
-  return compatibleClient;
 }
 
 export async function initializeDb() {

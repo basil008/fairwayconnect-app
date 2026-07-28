@@ -105,3 +105,9 @@ main {
   color: #1B5E20;
   font-weight: 600;
 }
+
+/* Test site banner spacing */
+body {
+  padding-top: 0 !important;
+}
+

@@ -1,6 +1,52 @@
 import { NextResponse } from 'next/server';
 import { getDb } from '@/lib/db';
 
+// Prize display order for Captain's/President's Prize
+const PRIZE_DISPLAY_ORDER: Record<string, number> = {
+  'overall': 0,        // 1st, 2nd, (3rd comes after classes due to position)
+  'class_1': 10,       // Class 1 - 1st & 2nd
+  'class_2': 20,       // Class 2 - 1st & 2nd
+  'front_9': 40,       // Front 9
+  'back_9': 50,        // Back 9
+  'ntp': 60,           // Nearest the Pin
+  'longest_drive': 70, // Longest Drive
+  'twos': 80,          // Twos
+  'visitors': 90,      // Visitors Prize
+  'past_captains': 85, // Past Captain's Prize
+  'division_a': 100,
+  'division_b': 110,
+  'best_visitor': 120,
+  'third_overall': 30, // Legacy - should not be used (use 'overall' + position 3)
+};
+
+// Helper function to calculate countback scores
+// ALGS Standard: Back 9 → Back 6 → Gross Score
+async function getCountbackScores(db: any, scorecardId: string) {
+  try {
+    const holesResult = await db.execute({
+      sql: `SELECT hole_number, stableford_points FROM hole_scores WHERE scorecard_id = ? ORDER BY hole_number`,
+      args: [scorecardId]
+    });
+    
+    const holes = holesResult.rows as Array<{ hole_number: number; stableford_points: number }>;
+    
+    // Calculate back 9 (holes 10-18)
+    const back9 = holes
+      .filter(h => h.hole_number >= 10 && h.hole_number <= 18)
+      .reduce((sum, h) => sum + (h.stableford_points || 0), 0);
+    
+    // Calculate back 6 (holes 13-18)
+    const back6 = holes
+      .filter(h => h.hole_number >= 13 && h.hole_number <= 18)
+      .reduce((sum, h) => sum + (h.stableford_points || 0), 0);
+    
+    return { back9, back6 };
+  } catch (err) {
+    console.error('Countback calculation error for scorecard', scorecardId, ':', err);
+    return { back9: 0, back6: 0 }; // Return zeros if calculation fails
+  }
+}
+
 export async function GET(
   request: Request,
   { params }: { params: Promise<{ id: string }> }
@@ -11,7 +57,8 @@ export async function GET(
   try {
     // Get event details
     const eventResult = await db.execute({
-      sql: `SELECT e.*, c.name as course_name 
+      sql: `SELECT e.id, e.name, e.date, e.format, e.status, e.results_published, 
+                    e.course_id, e.prize_config, e.season_id, c.name as course_name 
             FROM events e 
             LEFT JOIN courses c ON e.course_id = c.id 
             WHERE e.id = ?`,
@@ -23,13 +70,19 @@ export async function GET(
     }
 
     const event = eventResult.rows[0];
+    console.log('📊 Event data from DB:', JSON.stringify({id, status: event.status, results_published: event.results_published, type: typeof event.results_published}));
 
-    // Get all scorecards with member names (exclude empty/reset scorecards)
+    // Get all scorecards with member names (exclude empty/reset scorecards AND visitors)
+    // Only include submitted scorecards with valid data (total_points > 0 AND total_gross > 0)
     const scorecardsResult = await db.execute({
       sql: `SELECT sc.*, m.name, m.handicap
             FROM scorecards sc
             JOIN members m ON sc.member_id = m.id
-            WHERE sc.event_id = ? AND sc.total_points > 0`,
+            WHERE sc.event_id = ? 
+              AND sc.status = 'submitted'
+              AND sc.total_points > 0 
+              AND sc.total_gross > 0
+              AND (m.member_type IS NULL OR m.member_type != 'visitor')`,
       args: [id]
     });
 
@@ -61,35 +114,61 @@ export async function GET(
       sql: `SELECT pa.*, m.name as member_name
             FROM prize_allocations pa
             LEFT JOIN members m ON pa.member_id = m.id
-            WHERE pa.event_id = ?
-            ORDER BY pa.prize_type, pa.position`,
+            WHERE pa.event_id = ?`,
       args: [id]
     });
     
-    let calculatedPrizes = prizesResult.rows.map(row => ({
-      prize_type: row.prize_type,
-      position: row.position,
-      label: row.label,
-      value: row.value || 0,
-      member_name: row.member_name,
-    }));
+    let calculatedPrizes = prizesResult.rows
+      .map(row => ({
+        prize_type: row.prize_type,
+        position: row.position,
+        label: row.label,
+        value: row.value || 0,
+        member_name: row.member_name,
+      }))
+      .sort((a, b) => {
+        // Get base order for prize types
+        let aOrder = PRIZE_DISPLAY_ORDER[a.prize_type as string] ?? 999;
+        let bOrder = PRIZE_DISPLAY_ORDER[b.prize_type as string] ?? 999;
+        
+        // Special case: 3rd Overall (prize_type='overall', position=3) should sort AFTER class prizes
+        if (a.prize_type === 'overall' && a.position === 3) aOrder = 30; // After class_2 (20)
+        if (b.prize_type === 'overall' && b.position === 3) bOrder = 30;
+        
+        if (aOrder !== bOrder) return aOrder - bOrder;
+        
+        // Within same type, sort by position (1, 2)
+        const aPos = (a.position as number) ?? 999;
+        const bPos = (b.position as number) ?? 999;
+        return aPos - bPos;
+      });
     
     // If no prizes allocated, auto-calculate from scorecards
     if (calculatedPrizes.length === 0 && scorecardsResult.rows.length > 0) {
-      // Sort by adjusted points (with deductions) then gross
-      const sorted = [...scorecardsResult.rows]
-        .map(row => {
+      // Get countback scores for all scorecards
+      const scorecardsWithCountback = await Promise.all(
+        scorecardsResult.rows.map(async (row) => {
           const nameLower = ((row.name as string) || '').trim().toLowerCase();
           const surname = ((row.name as string) || '').trim().split(' ').slice(-1)[0].toLowerCase();
           const deduction = deductionMap.get(nameLower) || deductionMap.get(surname) || 0;
           const rawPts = (row.total_points as number) || 0;
           const netPts = rawPts + deduction;
-          return { ...row, netPts, deduction, rawPts };
+          const countback = await getCountbackScores(db, row.id as string);
+          return { ...row, netPts, deduction, rawPts, ...countback };
         })
-        .sort((a, b) => {
-          if (b.netPts !== a.netPts) return b.netPts - a.netPts;
-          return (a.total_gross as number) - (b.total_gross as number);
-        });
+      );
+      
+      // Sort by: 1) points, 2) back 9, 3) back 6, 4) gross score (lower is better)
+      const sorted = scorecardsWithCountback.sort((a, b) => {
+        // 1. Points (higher is better)
+        if (b.netPts !== a.netPts) return b.netPts - a.netPts;
+        // 2. Back 9 countback (higher is better)
+        if (b.back9 !== a.back9) return b.back9 - a.back9;
+        // 3. Back 6 countback (higher is better)
+        if (b.back6 !== a.back6) return b.back6 - a.back6;
+        // 4. Gross score (lower is better)
+        return (a.total_gross as number) - (b.total_gross as number);
+      });
       
       // Top 3 overall
       if (sorted.length >= 1) {
@@ -210,6 +289,19 @@ export async function GET(
       }
     }
 
+    // Sort prizes ONLY if auto-calculated (don't re-sort finalized prizes)
+    if (prizesResult.rows.length === 0) {
+      calculatedPrizes.sort((a, b) => {
+        const orderA = PRIZE_DISPLAY_ORDER[a.prize_type] || 99;
+        const orderB = PRIZE_DISPLAY_ORDER[b.prize_type] || 99;
+        
+        if (orderA !== orderB) return orderA - orderB;
+        // Within same type, sort by position
+        if (a.position && b.position) return a.position - b.position;
+        return 0;
+      });
+    }
+
     return NextResponse.json({
       event: {
         id: event.id,
@@ -218,25 +310,40 @@ export async function GET(
         date: event.date,
         format: event.format,
         status: event.status,
+        results_published: event.results_published || 0, // Return publish status
       },
-      scorecards: scorecardsResult.rows.map(row => {
-        const nameLower = ((row.name as string) || '').trim().toLowerCase();
-        const surname = ((row.name as string) || '').trim().split(' ').slice(-1)[0].toLowerCase();
-        const deduction = deductionMap.get(nameLower) || 0;
-        const rawPts = (row.total_points as number) || 0;
-        const adjustedPts = rawPts + deduction; // For event prizes only
-        return {
-          member_id: row.member_id,
-          name: row.name,
-          handicap: row.handicap,
-          total_points: adjustedPts, // Event ranking uses adjusted
-          raw_points: rawPts, // GOTY uses raw
-          deduction,
-          total_gross: row.total_gross || 0,
-          holes_completed: row.holes_completed || 0,
-          status: row.status,
-        };
-      }).sort((a, b) => (b.total_points as number) - (a.total_points as number)),
+      scorecards: await Promise.all(
+        scorecardsResult.rows.map(async (row) => {
+          const nameLower = ((row.name as string) || '').trim().toLowerCase();
+          const surname = ((row.name as string) || '').trim().split(' ').slice(-1)[0].toLowerCase();
+          const deduction = deductionMap.get(nameLower) || 0;
+          const rawPts = (row.total_points as number) || 0;
+          const adjustedPts = rawPts + deduction; // For event prizes only
+          const countback = await getCountbackScores(db, row.id as string);
+          return {
+            member_id: row.member_id,
+            name: row.name,
+            handicap: row.handicap,
+            total_points: adjustedPts, // Event ranking uses adjusted
+            raw_points: rawPts, // GOTY uses raw
+            deduction,
+            total_gross: row.total_gross || 0,
+            holes_completed: row.holes_completed || 0,
+            status: row.status,
+            back9: countback.back9,
+            back6: countback.back6,
+          };
+        })
+      ).then(cards => cards.sort((a, b) => {
+        // 1. Points (higher is better)
+        if (b.total_points !== a.total_points) return b.total_points - a.total_points;
+        // 2. Back 9 countback (higher is better)
+        if (b.back9 !== a.back9) return b.back9 - a.back9;
+        // 3. Back 6 countback (higher is better)
+        if (b.back6 !== a.back6) return b.back6 - a.back6;
+        // 4. Gross score (lower is better)
+        return a.total_gross - b.total_gross;
+      })),
       prizes: calculatedPrizes,
       sideComps: sideCompsResult.rows.map(row => ({
         type: row.type,
@@ -247,7 +354,13 @@ export async function GET(
       })),
     });
   } catch (error) {
-    console.error('Error fetching event results:', error);
-    return NextResponse.json({ error: 'Failed to fetch results' }, { status: 500 });
+    console.error('❌ Error fetching event results:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error details:', { message: errorMessage, stack: errorStack });
+    return NextResponse.json({ 
+      error: 'Failed to fetch results',
+      details: errorMessage 
+    }, { status: 500 });
   }
 }

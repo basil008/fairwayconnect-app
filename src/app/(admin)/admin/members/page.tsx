@@ -85,43 +85,21 @@ export default function AdminMembersPage() {
 
   const handleSave = async () => {
     setSaving(true);
-    try {
-      let res;
-      if (editId) {
-        const payload = { id: editId, ...form };
-        console.log('[MEMBER SAVE] Sending update:', payload);
-        res = await fetch('/api/members/update', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-      } else {
-        console.log('[MEMBER SAVE] Sending new member:', form);
-        res = await fetch('/api/members', {
-          method: 'POST', headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(form),
-        });
-      }
-      
-      if (!res.ok) {
-        const error = await res.text();
-        console.error('[MEMBER SAVE] Failed with status:', res.status, 'body:', error);
-        alert(`Save failed (${res.status}): ${error || 'No error message'}`);
-        setSaving(false);
-        return;
-      }
-      
-      const result = await res.json();
-      console.log('[MEMBER SAVE] API response:', result);
-      
-      console.log('[MEMBER SAVE] Success!');
-      setShowAdd(false);
-      setEditId(null);
-      setForm({ name: '', handicap: 18, email: '', phone: '', member_type: 'member', member_pin: '' });
-      await loadMembers();
-    } catch (err) {
-      console.error('[MEMBER SAVE] Error:', err);
-      alert(`Error: ${err}`);
+    if (editId) {
+      await fetch('/api/members/update', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ id: editId, ...form }),
+      });
+    } else {
+      await fetch('/api/members', {
+        method: 'POST', headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(form),
+      });
     }
+    setShowAdd(false);
+    setEditId(null);
+    setForm({ name: '', handicap: 18, email: '', phone: '', member_type: 'member', member_pin: '' });
+    loadMembers();
     setSaving(false);
   };
 

@@ -1,7 +1,7 @@
 'use client';
 
-import { useEffect, useState, use } from 'react';
-import { useRouter } from 'next/navigation';
+import { useEffect, useState } from 'react';
+import { useRouter, use } from 'next/navigation';
 
 interface CaptainPrizeConfig {
   event_id: string;

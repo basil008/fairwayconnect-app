@@ -13,13 +13,12 @@ export async function POST() {
     const fixes = [];
 
     // Step 1: Find and fix trailing spaces in member names
-    const members = await db.execute(
-      `SELECT id, name FROM members WHERE name != TRIM(name)`
-    );
+    const members = await db.execute({
+      sql: `SELECT id, name FROM members WHERE name != TRIM(name)`
+    });
 
     if (members.rows.length > 0) {
-      for (const row of members.rows) {
-        const member = row as unknown as { id: string; name: string };
+      for (const member of members.rows) {
         issues.push(`Found trailing space: "${member.name}"`);
         await db.execute({
           sql: 'UPDATE members SET name = TRIM(name) WHERE id = ?',
@@ -60,9 +59,9 @@ export async function GET() {
     const issues = [];
 
     // Check for trailing spaces
-    const trailingSpaces = await db.execute(
-      `SELECT id, name FROM members WHERE name != TRIM(name)`
-    );
+    const trailingSpaces = await db.execute({
+      sql: `SELECT id, name FROM members WHERE name != TRIM(name)`
+    });
 
     if (trailingSpaces.rows.length > 0) {
       issues.push({

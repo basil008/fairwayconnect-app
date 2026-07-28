@@ -35,14 +35,20 @@ export default function GOTYPage() {
         const s = data.standings || [];
         setStandings(s);
         setTotalEvents(data.total_events || 0);
-        // Extract unique event names in date order from all breakdowns
-        const evtMap = new Map<string, string>();
+        // Extract unique event names and sort by event number (1-8)
+        const evtMap = new Map<string, { name: string; date: string }>();
         for (const entry of s) {
           for (const b of entry.breakdown) {
-            if (!evtMap.has(b.event_id)) evtMap.set(b.event_id, b.event_name);
+            if (!evtMap.has(b.event_id)) {
+              evtMap.set(b.event_id, { name: b.event_name, date: b.event_date });
+            }
           }
         }
-        setEventNames(Array.from(evtMap.values()));
+        // Sort by date to ensure correct sequence (event 1 to 8)
+        const sortedEvents = Array.from(evtMap.values())
+          .sort((a, b) => a.date.localeCompare(b.date))
+          .map(e => e.name);
+        setEventNames(sortedEvents);
         setLoading(false);
       });
   }, [season]);
@@ -89,13 +95,13 @@ export default function GOTYPage() {
             <p className="text-gray-400">No results yet for {season}</p>
           </div>
         ) : (
-          <div className="bg-white rounded-2xl shadow-sm overflow-x-auto">
+          <div className="bg-white rounded-2xl shadow-sm overflow-x-auto relative">
             <table className="w-full border-collapse text-sm">
               <thead>
                 <tr className="bg-fairway-900 text-white">
-                  <th className="px-2 py-3 text-left text-xs font-bold w-8">#</th>
-                  <th className="px-2 py-3 text-left text-xs font-bold min-w-[140px]">Player</th>
-                  <th className="px-3 py-3 text-center text-xs font-bold w-16 bg-yellow-600">
+                  <th className="px-2 py-3 text-left text-xs font-bold sticky left-0 bg-fairway-900 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)]" style={{ minWidth: '40px' }}>#</th>
+                  <th className="px-2 py-3 text-left text-xs font-bold sticky bg-fairway-900 z-20 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.2)]" style={{ left: '40px', minWidth: '150px' }}>Player</th>
+                  <th className="px-3 py-3 text-center text-xs font-bold bg-yellow-600 sticky z-20 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.3)]" style={{ left: '190px', minWidth: '70px' }}>
                     Total<br /><span className="text-[9px] font-normal">(Best 6)</span>
                   </th>
 
@@ -113,16 +119,16 @@ export default function GOTYPage() {
                   const isTop3 = entry.position <= 3;
                   return (
                     <tr key={entry.member_id} className={`border-b border-gray-100 ${isTop3 ? 'bg-yellow-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`}>
-                      <td className="px-2 py-2.5 text-center font-bold text-gray-500">
+                      <td className={`px-2 py-2.5 text-center font-bold text-gray-500 sticky left-0 z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)] ${isTop3 ? 'bg-yellow-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`} style={{ minWidth: '40px' }}>
                         {getMedal(entry.position)}
                       </td>
-                      <td className="px-2 py-2.5">
+                      <td className={`px-2 py-2.5 sticky z-10 shadow-[2px_0_5px_-2px_rgba(0,0,0,0.15)] ${isTop3 ? 'bg-yellow-50' : i % 2 === 0 ? 'bg-white' : 'bg-gray-50'}`} style={{ left: '40px', minWidth: '150px' }}>
                         <span className={`font-semibold ${isTop3 ? 'text-fairway-900' : 'text-gray-800'}`}>
                           {shortName(entry.name)}
                         </span>
                       </td>
-                      <td className={`px-3 py-2.5 text-center font-bold text-lg ${isTop3 ? 'text-fairway-900' : 'text-gray-800'}`}
-                        style={isTop3 ? { background: 'rgba(234, 179, 8, 0.15)' } : {}}>
+                      <td className={`px-3 py-2.5 text-center font-bold text-lg sticky z-10 shadow-[3px_0_6px_-2px_rgba(0,0,0,0.25)] ${isTop3 ? 'text-fairway-900 bg-yellow-50' : i % 2 === 0 ? 'text-gray-800 bg-white' : 'text-gray-800 bg-gray-50'}`}
+                        style={{ left: '190px', minWidth: '70px' }}>
                         {entry.total_points}
                       </td>
 

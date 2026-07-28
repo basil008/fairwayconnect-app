@@ -64,6 +64,7 @@ export function AdminNav({ current }: { current: string }) {
     { href: '/admin/members', label: 'Members', icon: '👥' },
     { href: '/admin/handicaps', label: 'Handicaps', icon: '⛳' },
     { href: '/admin/adj-handicaps', label: 'Adj Hcaps', icon: '📉' },
+    { href: '/admin/handicap-changes', label: 'H/C Changes', icon: '🔄' },
     { href: '/admin/merit', label: 'GOTY', icon: '🏆' },
     { href: '/admin/pricing', label: 'Pricing', icon: '💰' },
     { href: '/admin/settings', label: 'Settings', icon: '⚙️' },

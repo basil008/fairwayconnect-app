@@ -152,7 +152,7 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
 
     if (body.action === 'update_details') {
       await db.execute({
-        sql: `UPDATE events SET name = ?, course_name = ?, date = ?, first_tee = ?, tee_interval = ?, format = ?, entry_fee = ?, notes = ?, status = ?, scoring_open = ?, handicap_allowance = ?, event_type = ? WHERE id = ?`,
+        sql: `UPDATE events SET name = ?, course_name = ?, date = ?, first_tee = ?, tee_interval = ?, format = ?, entry_fee = ?, notes = ?, status = ?, scoring_open = ?, handicap_allowance = ?, event_type = ?, class1_max_handicap = ?, class2_min_handicap = ? WHERE id = ?`,
         args: [
           body.name, body.course_name, body.date, body.first_tee,
           body.tee_interval || 8,
@@ -160,10 +160,21 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
           body.scoring_open || 0,
           body.handicap_allowance || 0.95,
           body.event_type || 'standard',
+          body.class1_max_handicap || 18.0,
+          body.class2_min_handicap || 19.0,
           id
         ]
       });
       console.log(`✅ Updated event details for: ${body.name} (status: ${body.status}, scoring: ${body.scoring_open ? 'open' : 'closed'}, H/C allowance: ${body.handicap_allowance})`);
+      return NextResponse.json({ success: true });
+    }
+
+    if (body.action === 'update_event_number') {
+      await db.execute({
+        sql: 'UPDATE events SET event_number = ? WHERE id = ?',
+        args: [body.event_number, id]
+      });
+      console.log(`✅ Updated event_number to ${body.event_number} for event ${id}`);
       return NextResponse.json({ success: true });
     }
 
@@ -173,6 +184,66 @@ export async function PUT(request: Request, { params }: { params: Promise<{ id: 
     console.error('❌ Event update error:', error);
     return NextResponse.json({ 
       error: 'Failed to update event', 
+      details: error instanceof Error ? error.message : String(error) 
+    }, { status: 500 });
+  }
+}
+
+export async function DELETE(request: Request, { params }: { params: Promise<{ id: string }> }) {
+  try {
+    console.log('🗑️ Delete event API called');
+    const db = getDb();
+    const { id } = await params;
+
+    // Cascade delete all related data
+    console.log(`🗑️ Deleting all data for event ${id}...`);
+    
+    // Delete prizes
+    await db.execute({ sql: 'DELETE FROM prize_allocations WHERE event_id = ?', args: [id] });
+    console.log('  ✓ Deleted prizes');
+    
+    // Delete GOTY points
+    await db.execute({ sql: 'DELETE FROM goty_points WHERE event_id = ?', args: [id] });
+    console.log('  ✓ Deleted GOTY points');
+    
+    // Delete hole scores
+    await db.execute({ 
+      sql: 'DELETE FROM hole_scores WHERE scorecard_id IN (SELECT id FROM scorecards WHERE event_id = ?)', 
+      args: [id] 
+    });
+    console.log('  ✓ Deleted hole scores');
+    
+    // Delete scorecards
+    await db.execute({ sql: 'DELETE FROM scorecards WHERE event_id = ?', args: [id] });
+    console.log('  ✓ Deleted scorecards');
+    
+    // Delete side comps
+    await db.execute({ sql: 'DELETE FROM side_comps WHERE event_id = ?', args: [id] });
+    console.log('  ✓ Deleted side comps');
+    
+    // Delete RSVPs
+    await db.execute({ sql: 'DELETE FROM rsvps WHERE event_id = ?', args: [id] });
+    console.log('  ✓ Deleted RSVPs');
+    
+    // Delete tee times
+    await db.execute({ sql: 'DELETE FROM tee_times WHERE event_id = ?', args: [id] });
+    console.log('  ✓ Deleted tee times');
+    
+    // Delete course holes
+    await db.execute({ sql: 'DELETE FROM course_holes WHERE event_id = ?', args: [id] });
+    console.log('  ✓ Deleted course holes');
+    
+    // Delete the event itself
+    await db.execute({ sql: 'DELETE FROM events WHERE id = ?', args: [id] });
+    console.log('  ✓ Deleted event');
+
+    console.log(`✅ Event ${id} deleted successfully`);
+    return NextResponse.json({ success: true });
+
+  } catch (error) {
+    console.error('❌ Event delete error:', error);
+    return NextResponse.json({ 
+      error: 'Failed to delete event', 
       details: error instanceof Error ? error.message : String(error) 
     }, { status: 500 });
   }

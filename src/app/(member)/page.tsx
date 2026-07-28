@@ -18,10 +18,16 @@ interface NineWinner {
   name: string; handicap: number; points: number;
 }
 
+interface ClassWinner {
+  name: string; handicap: number; points: number; position: number;
+}
+
 interface LastEventData {
   event_name: string;
   event_date?: string;
   leaderboard: LeaderboardEntry[];
+  class1_winners?: ClassWinner[];
+  class2_winners?: ClassWinner[];
   front9_winner: NineWinner | null;
   back9_winner: NineWinner | null;
 }
@@ -267,6 +273,24 @@ export default function HomePage() {
                 <span className="flex-1 font-semibold text-gray-900 truncate">{entry.name}</span>
                 <span className="text-xs text-gray-400 mx-2">({entry.handicap})</span>
                 <span className="font-bold text-fairway-900 text-sm">{entry.total_points} pts</span>
+              </div>
+            ))}
+            {/* Class 1 Winners */}
+            {lastEventData.class1_winners && lastEventData.class1_winners.map((winner, idx) => (
+              <div key={`class1-${idx}`} className="flex items-center px-4 py-2.5 bg-blue-50/30">
+                <span className="w-16 text-xs font-bold text-blue-600">Class 1 {winner.position === 1 ? '1st' : '2nd'}</span>
+                <span className="flex-1 font-medium text-gray-800 truncate">{winner.name}</span>
+                <span className="text-xs text-gray-400 mx-2">({winner.handicap})</span>
+                <span className="font-semibold text-gray-700 text-sm">{winner.points} pts</span>
+              </div>
+            ))}
+            {/* Class 2 Winners */}
+            {lastEventData.class2_winners && lastEventData.class2_winners.map((winner, idx) => (
+              <div key={`class2-${idx}`} className="flex items-center px-4 py-2.5 bg-green-50/30">
+                <span className="w-16 text-xs font-bold text-green-600">Class 2 {winner.position === 1 ? '1st' : '2nd'}</span>
+                <span className="flex-1 font-medium text-gray-800 truncate">{winner.name}</span>
+                <span className="text-xs text-gray-400 mx-2">({winner.handicap})</span>
+                <span className="font-semibold text-gray-700 text-sm">{winner.points} pts</span>
               </div>
             ))}
             {/* Front 9 */}

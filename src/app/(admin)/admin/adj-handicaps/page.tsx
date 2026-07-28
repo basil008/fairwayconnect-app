@@ -27,6 +27,9 @@ export default function AdjHandicapsPage() {
   const [year, setYear] = useState(2026);
   const [search, setSearch] = useState('');
   const [saving, setSaving] = useState<string | null>(null);
+  const [saveSuccess, setSaveSuccess] = useState<string | null>(null);
+  const [pendingChanges, setPendingChanges] = useState<Map<string, any>>(new Map());
+  const [isSaving, setIsSaving] = useState(false);
 
   const loadData = () => {
     setLoading(true);
@@ -37,7 +40,7 @@ export default function AdjHandicapsPage() {
         // Convert API format to expected format
         const converted = (data.members || []).map((m: any) => {
           const fullName = (m.member_name || '').trim();
-          const parts = fullName.split(' ').filter(p => p.length > 0);
+          const parts = fullName.split(' ').filter((p: string) => p.length > 0);
           return {
           id: m.member_id,
           member_name: parts.slice(-1)[0] || fullName, // Last name
@@ -68,14 +71,8 @@ export default function AdjHandicapsPage() {
     loadData();
   }, [isAuth, year]);
 
-  const handleCellChange = async (id: string, field: string, value: number) => {
-    setSaving(id + field);
-    await fetch('/api/deductions', {
-      method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify({ action: 'update', id, field, value }),
-    });
-    // Update local state
+  const handleCellChange = (id: string, field: string, value: number) => {
+    // Update local state immediately
     setDeductions(prev => prev.map(d => {
       if (d.id !== id) return d;
       const updated = { ...d, [field]: value };
@@ -85,7 +82,52 @@ export default function AdjHandicapsPage() {
         updated.outing_5 + updated.outing_6 + updated.outing_7 + updated.outing_8;
       return updated;
     }));
-    setSaving(null);
+    
+    // Track pending changes
+    const key = `${id}-${field}`;
+    setPendingChanges(prev => {
+      const next = new Map(prev);
+      next.set(key, { id, field, value });
+      return next;
+    });
+  };
+  
+  const handleSaveAll = async () => {
+    if (pendingChanges.size === 0) return;
+    
+    // Confirmation dialog with summary of changes
+    const changeList = Array.from(pendingChanges.values())
+      .map(c => {
+        const member = deductions.find(d => d.id === c.id);
+        const memberName = member ? `${member.first_name} ${member.member_name}` : 'Unknown';
+        return `  • ${memberName}: ${c.field.replace('_', ' ')} = ${c.value}`;
+      })
+      .join('\n');
+    
+    const confirmMessage = `⚠️ WARNING: You are about to save ${pendingChanges.size} handicap adjustment(s):\n\n${changeList}\n\nThis will affect player handicaps and scoring.\n\nAre you absolutely sure?`;
+    
+    if (!confirm(confirmMessage)) {
+      return;
+    }
+    
+    setIsSaving(true);
+    
+    // Save all pending changes
+    for (const [key, change] of pendingChanges) {
+      await fetch('/api/deductions', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', ...change }),
+      });
+    }
+    
+    // Clear pending changes
+    setPendingChanges(new Map());
+    setIsSaving(false);
+    
+    // Show success message
+    setSaveSuccess('all');
+    setTimeout(() => setSaveSuccess(null), 2000);
   };
 
   if (checking || !isAuth) return null;
@@ -107,11 +149,37 @@ export default function AdjHandicapsPage() {
       <AdminNav current="/admin/adj-handicaps" />
 
       <div className="max-w-7xl mx-auto px-4 py-6">
+        {/* Pending Changes Warning */}
+        {pendingChanges.size > 0 && (
+          <div className="bg-red-50 border-2 border-red-500 rounded-xl p-4 mb-4">
+            <div className="flex items-center gap-3">
+              <span className="text-3xl">⚠️</span>
+              <div className="flex-1">
+                <p className="font-bold text-red-800 text-lg">UNSAVED CHANGES!</p>
+                <p className="text-red-700 text-sm">
+                  You have {pendingChanges.size} pending handicap adjustment(s). 
+                  Click "Save All Changes" below to apply them, or refresh the page to discard.
+                </p>
+              </div>
+              <button
+                onClick={handleSaveAll}
+                disabled={isSaving}
+                className="bg-red-600 hover:bg-red-700 text-white px-6 py-3 rounded-xl font-bold text-sm disabled:opacity-50"
+              >
+                {isSaving ? 'Saving...' : `Save ${pendingChanges.size} Change${pendingChanges.size > 1 ? 's' : ''}`}
+              </button>
+            </div>
+          </div>
+        )}
+
         {/* Legend */}
         <div className="bg-yellow-50 border border-yellow-200 rounded-xl p-3 mb-4 text-xs">
           <p className="font-bold text-yellow-800 mb-1">Deduction Values:</p>
           <p className="text-yellow-700">
             <strong>-3</strong> = 1st Place · <strong>-2</strong> = 2nd/3rd Place · <strong>-1</strong> = Front 9/Back 9 Winner · <strong>+1</strong> = Attended (no prize)
+          </p>
+          <p className="text-yellow-700 mt-2 font-bold">
+            ⚠️ All changes require confirmation before being saved!
           </p>
         </div>
 
@@ -132,6 +200,17 @@ export default function AdjHandicapsPage() {
               <option key={y} value={y}>{y}</option>
             ))}
           </select>
+          <button
+            onClick={handleSaveAll}
+            disabled={pendingChanges.size === 0 || isSaving}
+            className={`px-6 py-2 rounded-xl text-sm font-semibold transition ${
+              pendingChanges.size > 0 && !isSaving
+                ? 'bg-green-600 text-white hover:bg-green-700'
+                : 'bg-gray-200 text-gray-400 cursor-not-allowed'
+            }`}
+          >
+            {isSaving ? 'Saving...' : saveSuccess === 'all' ? '✓ Saved!' : `Save ${pendingChanges.size > 0 ? `(${pendingChanges.size})` : ''}`}
+          </button>
           <button
             onClick={() => {
               const printWindow = window.open('', '_blank');
@@ -230,14 +309,38 @@ export default function AdjHandicapsPage() {
                       {d.current_deductions}
                     </td>
                     <td className="px-2 py-2 text-center bg-gray-50">
-                      <input
-                        type="number"
+                      <select
                         value={d.year_starting_deduction}
-                        onChange={e => handleCellChange(d.id, 'year_starting_deduction', Number(e.target.value))}
-                        className={`w-12 text-center border rounded px-1 py-0.5 text-xs ${
-                          saving === d.id + 'year_starting_deduction' ? 'bg-yellow-100' : 'border-gray-200'
+                        onChange={e => {
+                          const newValue = Number(e.target.value);
+                          const oldValue = d.year_starting_deduction;
+                          if (newValue !== oldValue) {
+                            if (confirm(`⚠️ Change year starting deduction for ${d.first_name} ${d.member_name} from ${oldValue} to ${newValue}?\n\nThis will affect their handicap calculations.`)) {
+                              handleCellChange(d.id, 'year_starting_deduction', newValue);
+                            } else {
+                              // Reset to old value
+                              e.target.value = String(oldValue);
+                            }
+                          }
+                        }}
+                        className={`w-16 text-center border rounded px-1 py-0.5 text-xs ${
+                          saving === d.id + 'year_starting_deduction' ? 'bg-yellow-100' :
+                          saveSuccess === d.id + 'year_starting_deduction' ? 'bg-green-100 border-green-500' :
+                          pendingChanges.has(`${d.id}-year_starting_deduction`) ? 'bg-yellow-50 border-yellow-500 border-2' :
+                          'border-gray-200'
                         }`}
-                      />
+                        title="Year starting deduction - REQUIRES CONFIRMATION"
+                      >
+                        <option value="0">0</option>
+                        <option value="-1">-1</option>
+                        <option value="-2">-2</option>
+                        <option value="-3">-3</option>
+                        <option value="-4">-4</option>
+                        <option value="-5">-5</option>
+                        <option value="-6">-6</option>
+                        <option value="1">+1</option>
+                        <option value="2">+2</option>
+                      </select>
                     </td>
                     {[1, 2, 3, 4, 5, 6, 7, 8].map(n => {
                       const field = `outing_${n}` as keyof Deduction;
@@ -245,15 +348,33 @@ export default function AdjHandicapsPage() {
                       return (
                         <td key={n} className="px-2 py-2 text-center">
                           <input
-                            type="number"
+                            type="text"
                             value={val}
-                            onChange={e => handleCellChange(d.id, field, Number(e.target.value))}
+                            onFocus={e => e.target.select()}
+                            onBlur={e => {
+                              const inputVal = e.target.value;
+                              const newValue = inputVal === '' || inputVal === '-' ? 0 : Number(inputVal) || 0;
+                              const oldValue = val;
+                              
+                              if (newValue !== oldValue) {
+                                if (confirm(`⚠️ Change Outing ${n} for ${d.first_name} ${d.member_name} from ${oldValue} to ${newValue}?\n\nNegative = deductions earned\nPositive = earned back`)) {
+                                  handleCellChange(d.id, field, newValue);
+                                } else {
+                                  // Reset to old value
+                                  e.target.value = String(oldValue);
+                                }
+                              }
+                            }}
                             className={`w-12 text-center border rounded px-1 py-0.5 text-xs ${
                               saving === d.id + field ? 'bg-yellow-100' :
+                              saveSuccess === d.id + field ? 'bg-green-100 border-green-500' :
+                              pendingChanges.has(`${d.id}-${field}`) ? 'bg-yellow-50 border-yellow-500 border-2' :
                               val < 0 ? 'bg-red-50 border-red-200 text-red-700' :
                               val > 0 ? 'bg-green-50 border-green-200 text-green-700' :
                               'border-gray-200'
                             }`}
+                            title="Click to edit - REQUIRES CONFIRMATION on blur"
+                            placeholder="0"
                           />
                         </td>
                       );

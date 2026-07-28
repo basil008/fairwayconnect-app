@@ -1,11 +1,10 @@
-app = 'fairwayconnect-live'
-primary_region = 'lhr'
+app = 'fairwayconnect'
+primary_region = 'ams'
 
 [build]
 
 [env]
   NODE_ENV = 'production'
-  PORT = '3000'
 
 [http_service]
   internal_port = 3000

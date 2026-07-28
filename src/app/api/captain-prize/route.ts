@@ -1,9 +1,8 @@
 import { NextResponse } from 'next/server';
-import { getDb } from '@/lib/db';
+import { db } from '@/lib/db';
 
 // GET: Fetch Captain's Prize config for an event
 export async function GET(request: Request) {
-  const db = getDb();
   try {
     const { searchParams } = new URL(request.url);
     const eventId = searchParams.get('event_id');
@@ -52,7 +51,6 @@ export async function GET(request: Request) {
 
 // POST: Save/Update Captain's Prize config
 export async function POST(request: Request) {
-  const db = getDb();
   try {
     const body = await request.json();
     const { event_id, ...config } = body;

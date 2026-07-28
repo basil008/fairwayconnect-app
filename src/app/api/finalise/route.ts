@@ -23,11 +23,12 @@ async function getDeductionSettings(db: ReturnType<typeof getDb>) {
 }
 
 export async function POST(request: Request) {
-  const db = getDb();
-  const body = await request.json().catch(() => ({}));
-  
-  // Get event from body or find current event
-  let eventId = body.event_id;
+  try {
+    const db = getDb();
+    const body = await request.json().catch(() => ({}));
+    
+    // Get event from body or find current event
+    let eventId = body.event_id;
   
   if (!eventId) {
     const inProgressResult = await db.execute("SELECT id FROM events WHERE status = 'in_progress' ORDER BY date DESC LIMIT 1");
@@ -53,7 +54,8 @@ export async function POST(request: Request) {
   // Get all submitted scorecards with member type
   const scorecardsResult = await db.execute({
     sql: `
-      SELECT s.*, m.name, m.handicap, m.member_type
+      SELECT s.id, s.member_id, s.event_id, s.total_points, s.total_gross, s.status,
+             m.name, m.handicap, m.member_type
       FROM scorecards s JOIN members m ON m.id = s.member_id
       WHERE s.event_id = ? AND s.status = 'submitted'
       ORDER BY s.total_points DESC
@@ -71,10 +73,10 @@ export async function POST(request: Request) {
 
   const getScores = async (scorecardId: string) => {
     const result = await db.execute({
-      sql: 'SELECT hole_number, stableford_points FROM hole_scores WHERE scorecard_id = ? ORDER BY hole_number',
+      sql: 'SELECT hole_number, stableford_points, gross_score FROM hole_scores WHERE scorecard_id = ? ORDER BY hole_number',
       args: [scorecardId]
     });
-    return result.rows as unknown as Array<{ hole_number: number; stableford_points: number }>;
+    return result.rows as unknown as Array<{ hole_number: number; stableford_points: number; gross_score: number }>;
   };
 
   // Get scores for all players and calculate front 9 / back 9
@@ -108,15 +110,30 @@ export async function POST(request: Request) {
     if (firstName && name) deductionMap.set(`${firstName} ${name}`.toLowerCase().trim(), total);
   }
 
+  // Filter out visitors - they can play but cannot win prizes
+  console.log('🔍 DEBUG: All scorecards BEFORE filter:', JSON.stringify(scorecardsWithScores.map(sc => ({
+    name: sc.name,
+    member_type: sc.member_type,
+    member_type_check: sc.member_type !== 'visitor',
+    points: sc.total_points
+  }))));
+  const eligibleForPrizes = scorecardsWithScores.filter(sc => sc.member_type !== 'visitor');
+  console.log('🔍 DEBUG: Eligible for prizes AFTER filter:', JSON.stringify(eligibleForPrizes.map(sc => ({
+    name: sc.name,
+    member_type: sc.member_type,
+    points: sc.total_points
+  }))));
+  console.log(`🔍 DEBUG: Filtered ${scorecardsWithScores.length - eligibleForPrizes.length} visitors from ${scorecardsWithScores.length} total`);
+
   // Add adjusted points for overall ranking (deductions applied)
-  const withAdjusted = scorecardsWithScores.map(sc => {
+  const withAdjusted = eligibleForPrizes.map(sc => {
     const surname = sc.name.trim().split(' ').slice(-1)[0].toLowerCase();
     const fullName = sc.name.trim().toLowerCase();
     const deduction = deductionMap.get(fullName) || 0;
     return { ...sc, adjusted_points: sc.total_points + deduction, deduction };
   });
 
-  // Sort by ADJUSTED points for overall prizes (1st, 2nd, 3rd)
+  // Sort by ADJUSTED points for overall prizes
   const sorted = [...withAdjusted].sort((a, b) => {
     if (a.adjusted_points !== b.adjusted_points) return b.adjusted_points - a.adjusted_points;
     return countbackCompare(a.scores, b.scores).result;
@@ -193,66 +210,174 @@ export async function POST(request: Request) {
     }
 
   } else {
-    // CAPTAIN'S / PRESIDENT'S PRIZE (class-based)
-    // Class 1 (lower handicaps): 1st €80, 2nd €60, 3rd €40, F9 €25, B9 €25
-    // Class 2 (higher handicaps): 1st €80, 2nd €60, 3rd €40, F9 €25, B9 €25
+    // CAPTAIN'S / PRESIDENT'S PRIZE - Special Rules
+    // Prize sequence:
+    // 1. 1st Overall (RAW points only - no adjustments)
+    // 2. 2nd Overall (adjusted points)
+    // 3. Class 1 - 1st & 2nd (adjusted points, excluding overall winners)
+    // 4. Class 2 - 1st & 2nd (adjusted points, excluding overall winners)
+    // 5. 3rd Overall (adjusted points, excluding all prior winners)
+    // Deductions for NEXT event: Winner -3, 2nd/3rd/Class winners -2
+    // GOTY: Always raw points (no adjustments)
+
+    // 1. Overall 1st (RAW POINTS ONLY - Captain's Prize special rule)
+    // Sort by raw points (total_points) NOT adjusted_points
+    const sortedByRaw = [...withAdjusted].sort((a, b) => {
+      if (a.total_points !== b.total_points) return b.total_points - a.total_points;
+      return countbackCompare(a.scores, b.scores).result;
+    });
     
-    const class1Players = sorted.filter(s => s.playing_handicap <= class1MaxHcp);
-    const class2Players = sorted.filter(s => s.playing_handicap >= class2MinHcp);
-
-    const allocateClassPrizes = async (players: typeof sorted, className: string, classLabel: string) => {
-      const classWinnerIds: string[] = [];
-      const prizeValues = [80, 60, 40];
-      
-      // Top 3 in class
-      for (let i = 0; i < Math.min(3, players.length); i++) {
-        let countbackNote = '';
-        if (i > 0 && players[i].total_points === players[i - 1].total_points) {
-          const result = countbackCompare(players[i - 1].scores, players[i].scores);
-          countbackNote = result.note;
-        }
-        await db.execute({
-          sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          args: [uuidv4(), eventId, players[i].member_id, className, i + 1,
-            `${['🥇 1st', '🥈 2nd', '🥉 3rd'][i]} ${classLabel} — ${players[i].name} (${players[i].total_points} pts)`,
-            prizeValues[i], countbackNote || null]
-        });
-        classWinnerIds.push(players[i].member_id);
+    if (sortedByRaw.length > 0) {
+      let countbackNote = '';
+      if (sortedByRaw.length > 1 && sortedByRaw[0].total_points === sortedByRaw[1].total_points) {
+        const result = countbackCompare(sortedByRaw[0].scores, sortedByRaw[1].scores);
+        countbackNote = result.note;
       }
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, sortedByRaw[0].member_id, 'overall', 1,
+          `🥇 1st Overall — ${sortedByRaw[0].name} (${sortedByRaw[0].total_points} pts)`,
+          0, countbackNote || null]
+      });
+      winnerIds.push(sortedByRaw[0].member_id);
+    }
 
-      // Front 9 in class
-      const front9 = players
-        .filter(s => !classWinnerIds.includes(s.member_id))
-        .sort((a, b) => b.front9 - a.front9);
-      if (front9.length > 0) {
-        await db.execute({
-          sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          args: [uuidv4(), eventId, front9[0].member_id, `${className}_front_9`, 1,
-            `⛳ Front 9 ${classLabel} — ${front9[0].name} (${front9[0].front9} pts)`,
-            25, null]
-        });
-        classWinnerIds.push(front9[0].member_id);
+    // 2. Overall 2nd (adjusted points with deductions, EXCLUDING 1st place winner)
+    const eligible2nd = sorted.filter(s => !winnerIds.includes(s.member_id));
+    if (eligible2nd.length > 0) {
+      let countbackNote = '';
+      if (eligible2nd.length > 1 && eligible2nd[0].adjusted_points === eligible2nd[1].adjusted_points) {
+        const result = countbackCompare(eligible2nd[0].scores, eligible2nd[1].scores);
+        countbackNote = result.note;
       }
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, eligible2nd[0].member_id, 'overall', 2,
+          `🥈 2nd Overall — ${eligible2nd[0].name} (${eligible2nd[0].adjusted_points} pts)`,
+          0, countbackNote || null]
+      });
+      winnerIds.push(eligible2nd[0].member_id);
+    }
 
-      // Back 9 in class
-      const back9 = players
-        .filter(s => !classWinnerIds.includes(s.member_id))
-        .sort((a, b) => b.back9 - a.back9);
-      if (back9.length > 0) {
-        await db.execute({
-          sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-          args: [uuidv4(), eventId, back9[0].member_id, `${className}_back_9`, 1,
-            `⛳ Back 9 ${classLabel} — ${back9[0].name} (${back9[0].back9} pts)`,
-            25, null]
-        });
+    // 3. Class 1 - 1st & 2nd (H/C ≤ class1_max_handicap, excluding overall winners)
+    const class1Players = sorted.filter(s => s.handicap <= class1MaxHcp && !winnerIds.includes(s.member_id));
+    
+    if (class1Players.length > 0) {
+      let countbackNote = '';
+      if (class1Players.length > 1 && class1Players[0].adjusted_points === class1Players[1].adjusted_points) {
+        const result = countbackCompare(class1Players[0].scores, class1Players[1].scores);
+        countbackNote = result.note;
       }
-    };
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, class1Players[0].member_id, 'class_1', 1,
+          `🏅 Class 1 - 1st (H/C ≤${class1MaxHcp}) — ${class1Players[0].name} (${class1Players[0].adjusted_points} pts)`,
+          0, countbackNote || null]
+      });
+      winnerIds.push(class1Players[0].member_id);
+    }
 
-    await allocateClassPrizes(class1Players, 'class_1', `Class 1 (≤${class1MaxHcp})`);
-    await allocateClassPrizes(class2Players, 'class_2', `Class 2 (${class2MinHcp}+)`);
+    if (class1Players.length > 1) {
+      let countbackNote = '';
+      if (class1Players.length > 2 && class1Players[1].adjusted_points === class1Players[2].adjusted_points) {
+        const result = countbackCompare(class1Players[1].scores, class1Players[2].scores);
+        countbackNote = result.note;
+      }
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, class1Players[1].member_id, 'class_1', 2,
+          `🏅 Class 1 - 2nd (H/C ≤${class1MaxHcp}) — ${class1Players[1].name} (${class1Players[1].adjusted_points} pts)`,
+          0, countbackNote || null]
+      });
+      winnerIds.push(class1Players[1].member_id);
+    }
+
+    // 4. Class 2 - 1st & 2nd (H/C > class1_max_handicap, excluding overall winners)
+    // Changed from >= class2MinHcp to > class1MaxHcp to avoid gap (e.g., 19.3 falls in neither class)
+    const class2Players = sorted.filter(s => s.handicap > class1MaxHcp && !winnerIds.includes(s.member_id));
+    
+    if (class2Players.length > 0) {
+      let countbackNote = '';
+      if (class2Players.length > 1 && class2Players[0].adjusted_points === class2Players[1].adjusted_points) {
+        const result = countbackCompare(class2Players[0].scores, class2Players[1].scores);
+        countbackNote = result.note;
+      }
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, class2Players[0].member_id, 'class_2', 1,
+          `🏅 Class 2 - 1st (H/C >${class1MaxHcp}) — ${class2Players[0].name} (${class2Players[0].adjusted_points} pts)`,
+          0, countbackNote || null]
+      });
+      winnerIds.push(class2Players[0].member_id);
+    }
+
+    if (class2Players.length > 1) {
+      let countbackNote = '';
+      if (class2Players.length > 2 && class2Players[1].adjusted_points === class2Players[2].adjusted_points) {
+        const result = countbackCompare(class2Players[1].scores, class2Players[2].scores);
+        countbackNote = result.note;
+      }
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, class2Players[1].member_id, 'class_2', 2,
+          `🏅 Class 2 - 2nd (H/C >${class1MaxHcp}) — ${class2Players[1].name} (${class2Players[1].adjusted_points} pts)`,
+          0, countbackNote || null]
+      });
+      winnerIds.push(class2Players[1].member_id);
+    }
+
+    // 5. 3rd Overall (all players, excluding all prior winners)
+    const third = sorted.filter(s => !winnerIds.includes(s.member_id));
+    if (third.length > 0) {
+      let countbackNote = '';
+      if (third.length > 1 && third[0].adjusted_points === third[1].adjusted_points) {
+        const result = countbackCompare(third[0].scores, third[1].scores);
+        countbackNote = result.note;
+      }
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, third[0].member_id, 'overall', 3,
+          `🥉 3rd Overall — ${third[0].name} (${third[0].adjusted_points} pts)`,
+          0, countbackNote || null]
+      });
+      winnerIds.push(third[0].member_id);
+    }
+
+    // Captain's Prize does NOT have Front 9 / Back 9 prizes
+    // (Those are only for Standard events)
   }
 
-  // Side comps (NTP, Longest Drive)
+  // Auto-detect Twos from scorecards (gross score = 2)
+  console.log(`🔍 Searching for Twos (gross_score = 2) in event ${eventId}...`);
+  const twosResult = await db.execute({
+    sql: `
+      SELECT hs.hole_number, sc.member_id, m.name
+      FROM hole_scores hs
+      JOIN scorecards sc ON hs.scorecard_id = sc.id
+      JOIN members m ON sc.member_id = m.id
+      WHERE sc.event_id = ? AND hs.gross_score = 2 AND sc.status = 'submitted'
+      ORDER BY hs.hole_number, m.name
+    `,
+    args: [eventId]
+  });
+  
+  console.log(`🎯 Found ${twosResult.rows.length} Twos`);
+  
+  // Clear existing Twos from side_comps and add fresh ones
+  await db.execute({
+    sql: "DELETE FROM side_comps WHERE event_id = ? AND type = 'twos'",
+    args: [eventId]
+  });
+  
+  for (const two of twosResult.rows) {
+    await db.execute({
+      sql: 'INSERT INTO side_comps (id, event_id, member_id, type, hole_number, value, unit) VALUES (?, ?, ?, ?, ?, ?, ?)',
+      args: [uuidv4(), eventId, two.member_id, 'twos', two.hole_number, 0, '']
+    });
+    console.log(`  ✓ Added Two: ${two.name} on hole ${two.hole_number}`);
+  }
+
+  // Side comps (NTP, Longest Drive, Twos)
   const sideCompsResult = await db.execute({
     sql: 'SELECT sc.*, m.name FROM side_comps sc JOIN members m ON m.id = sc.member_id WHERE sc.event_id = ?',
     args: [eventId]
@@ -283,6 +408,13 @@ export async function POST(request: Request) {
           `🏆 Two — Hole ${sc.hole_number} — ${sc.name}`,
           0, null]
       });
+    } else if (sc.type === 'visitors') {
+      await db.execute({
+        sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
+        args: [uuidv4(), eventId, sc.member_id, 'visitors', null,
+          `🏍️ Visitors Prize — ${sc.name} (${sc.value} pts)`,
+          0, null]
+      });
     }
   }
 
@@ -291,7 +423,7 @@ export async function POST(request: Request) {
   
   const season = new Date().getFullYear().toString();
   
-  // Store every player's Stableford score (not just top 10)
+  // Store every player's Stableford score (visitors already excluded)
   for (let i = 0; i < sorted.length; i++) {
     await db.execute({
       sql: 'INSERT INTO goty_points (id, member_id, event_id, position, points, season) VALUES (?, ?, ?, ?, ?, ?)',
@@ -316,27 +448,50 @@ export async function POST(request: Request) {
     let deduction = 0;
     let reason = '';
 
-    // Overall prizes
-    if (prizeType === 'overall' || prizeType === 'class_1' || prizeType === 'class_2') {
-      if (position === 1) {
-        deduction = deductions.deduction_1st;
-        reason = '1st Place';
-      } else if (position === 2) {
-        deduction = deductions.deduction_2nd;
-        reason = '2nd Place';
-      } else if (position === 3) {
-        deduction = deductions.deduction_3rd;
-        reason = '3rd Place';
+    if (eventType === 'captains' || eventType === 'presidents') {
+      // CAPTAIN'S PRIZE DEDUCTIONS (fixed values, not from settings)
+      if (prizeType === 'overall') {
+        if (position === 1) {
+          deduction = 3;
+          reason = 'Captain\'s Prize Winner';
+        } else if (position === 2) {
+          deduction = 2;
+          reason = 'Captain\'s Prize 2nd Overall';
+        } else if (position === 3) {
+          deduction = 2;
+          reason = 'Captain\'s Prize 3rd Overall';
+        }
+      } else if (prizeType === 'class_1' || prizeType === 'class_2') {
+        if (position === 1 || position === 2) {
+          deduction = 2;
+          const className = prizeType === 'class_1' ? 'Class 1' : 'Class 2';
+          reason = `Captain\'s Prize ${className} ${position === 1 ? '1st' : '2nd'}`;
+        }
       }
-    }
-    // Front 9 / Back 9
-    else if (prizeType === 'front_9' || prizeType === 'class_1_front_9' || prizeType === 'class_2_front_9') {
-      deduction = deductions.deduction_front9;
-      reason = 'Front 9 Winner';
-    }
-    else if (prizeType === 'back_9' || prizeType === 'class_1_back_9' || prizeType === 'class_2_back_9') {
-      deduction = deductions.deduction_back9;
-      reason = 'Back 9 Winner';
+      // Captain's Prize does NOT have Front 9 / Back 9 prizes or deductions
+    } else {
+      // STANDARD EVENT DEDUCTIONS (from society settings)
+      if (prizeType === 'overall' || prizeType === 'class_1' || prizeType === 'class_2') {
+        if (position === 1) {
+          deduction = deductions.deduction_1st;
+          reason = '1st Place';
+        } else if (position === 2) {
+          deduction = deductions.deduction_2nd;
+          reason = '2nd Place';
+        } else if (position === 3) {
+          deduction = deductions.deduction_3rd;
+          reason = '3rd Place';
+        }
+      }
+      // Front 9 / Back 9 (Standard events only)
+      else if (prizeType === 'front_9' || prizeType === 'class_1_front_9' || prizeType === 'class_2_front_9') {
+        deduction = deductions.deduction_front9;
+        reason = 'Front 9 Winner';
+      }
+      else if (prizeType === 'back_9' || prizeType === 'class_1_back_9' || prizeType === 'class_2_back_9') {
+        deduction = deductions.deduction_back9;
+        reason = 'Back 9 Winner';
+      }
     }
 
     if (deduction > 0) {
@@ -384,10 +539,24 @@ export async function POST(request: Request) {
     outingDeductions.set(update.memberId, -update.deduction);
   }
   
-  // Everyone who played but didn't win gets +1 (earned back)
+  // Everyone who played but didn't win gets +1 (earned back) - BUT ONLY if they have negative cumulative deductions
+  // RULE: Deductions range from negative to 0. Zero is the floor. Nobody can go below 0 (no +1, +2, etc.)
   for (const member of playedMembers) {
     if (!outingDeductions.has(member.id)) {
-      outingDeductions.set(member.id, 1);
+      // Get member's current cumulative deduction (up to but not including this event)
+      const memberFullName = member.name.trim().toLowerCase();
+      const surname = member.name.trim().split(' ').slice(-1)[0].toLowerCase();
+      const currentDeduction = deductionMap.get(memberFullName) || deductionMap.get(surname) || 0;
+      
+      // Only give +1 if they're currently negative (e.g., -1, -2, -3)
+      // This prevents them from going into positive territory
+      // 0 is the floor - players at 0 stay at 0
+      if (currentDeduction < 0) {
+        outingDeductions.set(member.id, 1);
+      } else {
+        // At 0 or somehow positive → give 0 (stay at 0)
+        outingDeductions.set(member.id, 0);
+      }
     }
   }
   
@@ -429,9 +598,10 @@ export async function POST(request: Request) {
     }
   }
 
-  // Update event status
+  // Update event - set results_published = 0 but KEEP status as 'in_progress'
+  // Status will only change to 'finalised' when admin publishes via /api/publish
   await db.execute({
-    sql: "UPDATE events SET status = 'finalised', results_published = 1 WHERE id = ?",
+    sql: "UPDATE events SET results_published = 0 WHERE id = ?",
     args: [eventId]
   });
 
@@ -439,9 +609,20 @@ export async function POST(request: Request) {
     ? ` ${handicapUpdates.length} handicap deduction(s) applied.`
     : '';
 
-  return NextResponse.json({ 
-    success: true, 
-    message: `Results finalised!${deductionSummary}`,
-    handicap_deductions: handicapUpdates
-  });
+    return NextResponse.json({ 
+      success: true, 
+      message: `Results finalized for admin review.${deductionSummary} Click 'Publish' to make visible to members.`,
+      handicap_deductions: handicapUpdates,
+      results_published: false
+    });
+  } catch (error) {
+    console.error('❌ Finalise error:', error);
+    const errorMessage = error instanceof Error ? error.message : String(error);
+    const errorStack = error instanceof Error ? error.stack : undefined;
+    console.error('Error details:', { message: errorMessage, stack: errorStack });
+    return NextResponse.json({ 
+      error: 'Failed to finalise event',
+      details: errorMessage 
+    }, { status: 500 });
+  }
 }

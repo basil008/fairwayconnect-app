@@ -28,6 +28,8 @@ export async function GET(request: Request) {
         JOIN events e ON s.event_id = e.id
         WHERE e.status = 'finalised' 
           AND strftime('%Y', e.date) = ?
+          AND m.status = 'active'
+          AND (m.member_type IS NULL OR m.member_type != 'visitor')
         ORDER BY m.name, e.date
       `,
       args: [season]
@@ -73,13 +75,16 @@ export async function GET(request: Request) {
 
     // Calculate standings
     const standings = Array.from(memberMap.values()).map(member => {
-      // Sort events by points DESC
-      member.events.sort((a: any, b: any) => b.points - a.points);
+      // Sort events by points DESC to determine which count (but don't modify original array)
+      const sortedByPoints = [...member.events].sort((a: any, b: any) => b.points - a.points);
       
       // Mark top N as counting
       const countingCount = Math.min(seasonInfo.best_of_x, member.events.length);
-      member.events.forEach((e: any, i: number) => {
-        e.counting = i < countingCount;
+      const countingEventIds = new Set(sortedByPoints.slice(0, countingCount).map((e: any) => e.event_id));
+      
+      // Mark counting flag on original events (preserving date order)
+      member.events.forEach((e: any) => {
+        e.counting = countingEventIds.has(e.event_id);
       });
       
       // Sum counting events

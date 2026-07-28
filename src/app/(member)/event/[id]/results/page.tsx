@@ -37,9 +37,10 @@ interface EventData {
     date: string;
     format: string;
     status: string;
+    results_published: number; // 1 = published by admin, 0 = not published
   };
   scorecards: Scorecard[];
-  prizes: Prize[];
+  prizes: Prize[]; // Only populated if results_published = 1 (admin published)
   sideComps: SideComp[];
 }
 
@@ -47,7 +48,8 @@ export default function EventResultsPage({ params }: { params: Promise<{ id: str
   const { id } = use(params);
   const [data, setData] = useState<EventData | null>(null);
   const [loading, setLoading] = useState(true);
-  const [tab, setTab] = useState<'leaderboard' | 'prizes'>('leaderboard');
+  // Members see prizes only (no leaderboard), default to prizes tab
+  const [tab, setTab] = useState<'leaderboard' | 'prizes'>('prizes');
 
   useEffect(() => {
     fetch(`/api/events/${id}/results`)
@@ -83,10 +85,61 @@ export default function EventResultsPage({ params }: { params: Promise<{ id: str
     );
   }
 
+  // Check if results are published (guard for members)
+  // Members can ONLY see results if admin has published them (results_published = 1)
+  const canViewResults = data.event.status === 'finalised' && data.event.results_published === 1;
+  
+  if (!canViewResults) {
+    return (
+      <div className="px-4 pt-6 pb-24">
+        <Link href="/calendar" className="inline-flex items-center text-sm text-gray-500 mb-4 hover:text-gray-700">
+          ← Back to Calendar
+        </Link>
+        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+          <span className="text-6xl mb-4 block">⏳</span>
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">Results Pending</h1>
+          <p className="text-gray-600 mb-1">
+            Scores for <strong>{data.event.name}</strong> are being finalized.
+          </p>
+          <p className="text-sm text-gray-500">
+            Check back soon — results usually published within 24 hours!
+          </p>
+        </div>
+      </div>
+    );
+  }
+
   const { event, scorecards, prizes, sideComps } = data;
   
   // Sort scorecards by points (descending)
   const sortedScores = [...scorecards].sort((a, b) => b.total_points - a.total_points);
+  
+  // Check if this is Captain's Prize or President's Prize (special prize ordering)
+  const isSpecialPrize = event.name?.includes("Captain") || event.name?.includes("President");
+  
+  // Sort prizes with special ordering for Captain's/President's Prize
+  const sortedPrizes = isSpecialPrize ? [
+    ...prizes].sort((a, b) => {
+    // Special order: 1st Overall, 2nd Overall, Class prizes, 3rd Overall, Other prizes
+    const getOrder = (prize: Prize) => {
+      if (prize.prize_type === 'overall' && prize.position === 1) return 1;
+      if (prize.prize_type === 'overall' && prize.position === 2) return 2;
+      if (prize.prize_type === 'class_1' || prize.prize_type === 'class_2' || prize.prize_type === 'class') return 3;
+      if (prize.prize_type === 'overall' && prize.position === 3) return 4;
+      if (prize.prize_type === 'third_overall') return 4; // Handle 3rd overall as separate type
+      return 5; // All other prizes (NTP, Longest Drive, Twos, Visitors)
+    };
+    const orderA = getOrder(a);
+    const orderB = getOrder(b);
+    if (orderA !== orderB) return orderA - orderB;
+    // Within class prizes, sort by position then class
+    if (orderA === 3 && orderB === 3) {
+      if (a.position !== b.position) return (a.position || 0) - (b.position || 0);
+      return a.prize_type === 'class_1' ? -1 : 1;
+    }
+    // Within same group, sort by position
+    return (a.position || 0) - (b.position || 0);
+  }) : prizes; // Regular events: use original order
   
   // Group prizes
   const overallPrizes = prizes.filter(p => p.prize_type === 'overall' || p.prize_type === 'class_1' || p.prize_type === 'class_2');
@@ -97,24 +150,7 @@ export default function EventResultsPage({ params }: { params: Promise<{ id: str
   const ldComps = sideComps.filter(s => s.type === 'longest_drive');
   const twosComps = sideComps.filter(s => s.type === 'twos');
 
-  const shareWhatsApp = () => {
-    let text = `🏆 ${event.name} Results\n📍 ${event.course_name}\n📅 ${new Date(event.date + 'T12:00:00').toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n`;
-    
-    text += `📊 Leaderboard\n`;
-    sortedScores.slice(0, 10).forEach((sc, i) => {
-      text += `${i + 1}. ${sc.name} — ${sc.total_points} pts\n`;
-    });
-    
-    if (overallPrizes.length > 0) {
-      text += `\n🏆 Winners\n`;
-      overallPrizes.forEach(p => {
-        text += `${p.label}\n`;
-      });
-    }
-    
-    text += '\n⛳ FairwayConnect';
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  };
+  // WhatsApp share removed - admin only feature
 
   return (
     <div className="px-4 pt-6 pb-24">
@@ -141,28 +177,14 @@ export default function EventResultsPage({ params }: { params: Promise<{ id: str
         </span>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-2 mb-4">
-        <button
-          onClick={() => setTab('leaderboard')}
-          className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
-            tab === 'leaderboard' ? 'bg-fairway-900 text-white' : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          📊 Leaderboard
-        </button>
-        <button
-          onClick={() => setTab('prizes')}
-          className={`flex-1 py-2 rounded-xl text-sm font-bold transition-colors ${
-            tab === 'prizes' ? 'bg-fairway-900 text-white' : 'bg-gray-100 text-gray-600'
-          }`}
-        >
-          🏆 Prizes
-        </button>
+      {/* Prizes heading (no tabs for members — prizes only) */}
+      <div className="mb-4">
+        <h2 className="text-lg font-bold text-gray-900">🏆 Prize Winners</h2>
+        <p className="text-sm text-gray-500">Official results and GOTY standings</p>
       </div>
 
-      {/* Leaderboard Tab */}
-      {tab === 'leaderboard' && (
+      {/* Leaderboard removed for members - prizes only */}
+      {false && (
         <div>
           {sortedScores.length === 0 ? (
             <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
@@ -240,127 +262,29 @@ export default function EventResultsPage({ params }: { params: Promise<{ id: str
         </div>
       )}
 
-      {/* Prizes Tab */}
-      {tab === 'prizes' && (
-        <div className="space-y-4">
-          {/* Overall Winners */}
-          {overallPrizes.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">🏆 Overall</h3>
-              <div className="space-y-2">
-                {overallPrizes.map((p, i) => (
-                  <div key={i} className={`bg-white rounded-xl p-4 shadow-sm ${i === 0 ? 'ring-2 ring-yellow-400' : ''}`}>
-                    <p className="font-bold text-gray-900">{p.label}</p>
-                    {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
-                  </div>
-                ))}
-              </div>
+      {/* Prizes - always shown (removed tab condition) */}
+      {data.prizes && data.prizes.length > 0 && (
+        <div className="space-y-2">
+          {sortedPrizes.map((p, i) => (
+            <div key={i} className={`bg-white rounded-xl p-4 shadow-sm ${
+              p.prize_type === 'overall' && p.position === 1 ? 'ring-2 ring-yellow-400' : ''
+            }`}>
+              <p className="font-bold text-gray-900">{p.label}</p>
+              {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
             </div>
-          )}
-
-          {/* Front 9 */}
-          {front9Prizes.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">⛳ Front 9</h3>
-              <div className="space-y-2">
-                {front9Prizes.map((p, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-                    <p className="text-sm font-bold text-gray-900">{p.label}</p>
-                    {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Back 9 */}
-          {back9Prizes.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">⛳ Back 9</h3>
-              <div className="space-y-2">
-                {back9Prizes.map((p, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-                    <p className="text-sm font-bold text-gray-900">{p.label}</p>
-                    {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Division Prizes */}
-          {divisionPrizes.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">📊 Divisions</h3>
-              <div className="space-y-2">
-                {divisionPrizes.map((p, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-                    <p className="text-sm font-bold text-gray-900">{p.label}</p>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* NTP */}
-          {ntpComps.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">🎯 Nearest the Pin</h3>
-              <div className="space-y-2">
-                {ntpComps.map((s, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-                    <span className="text-sm">Hole {s.hole_number}: <span className="font-bold">{s.member_name}</span></span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {/* Longest Drive */}
-          {ldComps.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">💥 Longest Drive</h3>
-              <div className="space-y-2">
-                {ldComps.map((s, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-                    <span className="text-sm">Hole {s.hole_number}: <span className="font-bold">{s.member_name}</span></span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {twosComps.length > 0 && (
-            <div>
-              <h3 className="text-sm font-bold text-gray-700 mb-2">🏆 Twos</h3>
-              <div className="space-y-2">
-                {twosComps.map((s, i) => (
-                  <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-                    <span className="text-sm">Hole {s.hole_number}: <span className="font-bold">{s.member_name}</span></span>
-                  </div>
-                ))}
-              </div>
-            </div>
-          )}
-
-          {prizes.length === 0 && sideComps.length === 0 && (
-            <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
-              <span className="text-4xl mb-3 block">🏆</span>
-              <p className="text-gray-500">No prizes awarded yet</p>
-            </div>
-          )}
+          ))}
         </div>
       )}
 
-      {/* Share button */}
-      {sortedScores.length > 0 && (
-        <button
-          onClick={shareWhatsApp}
-          className="w-full bg-green-600 text-white rounded-2xl py-3 font-bold text-sm mt-6"
-        >
-          📱 Share via WhatsApp
-        </button>
+      {/* No prizes published yet */}
+      {(!data.prizes || data.prizes.length === 0) && (
+        <div className="bg-white rounded-2xl p-8 text-center shadow-sm">
+          <span className="text-4xl mb-3 block">🏆</span>
+          <p className="text-gray-500">No prizes awarded yet</p>
+        </div>
       )}
+
+      {/* WhatsApp share button removed - admin only */}
     </div>
   );
 }

@@ -18,6 +18,9 @@ export default function LeaderboardPage() {
   const [eventName, setEventName] = useState('');
   const [tab, setTab] = useState<'all' | 'visitors'>('all');
   const [loading, setLoading] = useState(true);
+  const [isAdminAuthorized, setIsAdminAuthorized] = useState(false);
+  const [adminPin, setAdminPin] = useState('');
+  const [pinError, setPinError] = useState(false);
 
   const loadData = async () => {
     try {
@@ -47,15 +50,92 @@ export default function LeaderboardPage() {
   };
 
   useEffect(() => {
-    loadData();
-    const iv = setInterval(loadData, 30000); // Auto-refresh every 30s
-    return () => clearInterval(iv);
-  }, []);
+    if (isAdminAuthorized) {
+      loadData();
+      const iv = setInterval(loadData, 30000); // Auto-refresh every 30s
+      return () => clearInterval(iv);
+    }
+  }, [isAdminAuthorized]);
+
+  const handlePinSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    try {
+      const res = await fetch('/api/admin/verify-pin', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ pin: adminPin })
+      });
+      const data = await res.json();
+      if (data.success) {
+        setIsAdminAuthorized(true);
+        setPinError(false);
+      } else {
+        setPinError(true);
+        setAdminPin('');
+      }
+    } catch (err) {
+      setPinError(true);
+      setAdminPin('');
+    }
+  };
 
   const filtered = entries.filter(e => {
     if (tab === 'visitors') return e.member_type === 'visitor';
     return true;
   });
+
+  // Show admin PIN prompt if not authorized
+  if (!isAdminAuthorized) {
+    return (
+      <div className="min-h-screen flex items-center justify-center px-4 bg-gradient-to-br from-fairway-50 to-white">
+        <div className="w-full max-w-sm">
+          <div className="bg-white rounded-2xl shadow-2xl p-8">
+            <div className="text-center mb-6">
+              <div className="inline-flex items-center justify-center w-16 h-16 bg-fairway-100 rounded-full mb-4">
+                <span className="text-3xl">📊</span>
+              </div>
+              <h2 className="text-2xl font-bold text-gray-900 mb-2">Live Board</h2>
+              <p className="text-sm text-gray-500">Admin access required</p>
+            </div>
+            <form onSubmit={handlePinSubmit} className="space-y-4">
+              <div>
+                <label className="block text-sm font-medium text-gray-700 mb-2">Admin PIN</label>
+                <input
+                  type="password"
+                  inputMode="numeric"
+                  pattern="[0-9]*"
+                  maxLength={4}
+                  value={adminPin}
+                  onChange={(e) => { setAdminPin(e.target.value); setPinError(false); }}
+                  className={`w-full px-4 py-3 text-center text-2xl font-mono tracking-widest rounded-xl border-2 ${
+                    pinError ? 'border-red-500 bg-red-50' : 'border-gray-200 focus:border-fairway-500'
+                  } focus:outline-none focus:ring-2 focus:ring-fairway-500/20`}
+                  placeholder="••••"
+                  autoFocus
+                />
+                {pinError && (
+                  <p className="mt-2 text-sm text-red-600 text-center">❌ Incorrect PIN</p>
+                )}
+              </div>
+              <button
+                type="submit"
+                disabled={adminPin.length !== 4}
+                className="w-full py-3 bg-fairway-600 text-white font-semibold rounded-xl hover:bg-fairway-700 disabled:opacity-50 disabled:cursor-not-allowed transition-colors"
+              >
+                Access Live Board
+              </button>
+              <Link
+                href="/member-home"
+                className="block text-center text-sm text-gray-500 hover:text-gray-700 transition-colors"
+              >
+                ← Back to Home
+              </Link>
+            </form>
+          </div>
+        </div>
+      </div>
+    );
+  }
 
   if (loading) {
     return (
@@ -112,7 +192,7 @@ export default function LeaderboardPage() {
                   </p>
                   <p className="text-xs text-gray-400">Hcp {entry.handicap}
                     {entry.member_type === 'visitor' && <span className="ml-1 text-blue-500">(V)</span>}
-                    {live && entry.status !== 'submitted' && entry.holes_played && entry.holes_played > 0 &&
+                    {live && entry.status !== 'submitted' && entry.holes_played > 0 &&
                       <span className="ml-1 text-orange-500">Thru {entry.holes_played}</span>}
                   </p>
                 </div>

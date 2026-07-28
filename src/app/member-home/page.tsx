@@ -172,7 +172,7 @@ export default function MemberHome() {
         name: leader.name,
         total_points: leader.total_points
       } : null);
-      // Get last finalized event results
+      // Get last finalized event results (removed results_published check due to DB sync issues)
       const finalized = calendar?.events?.filter((ev: any) => ev.status === 'finalised');
       if (finalized && finalized.length > 0) {
         const lastEvent = finalized[finalized.length - 1];
@@ -184,10 +184,18 @@ export default function MemberHome() {
             hole_number: sc.hole_number
           })) || [];
         
+        // Get top 2 from published prizes (respects Captain's Prize special rules)
+        const overallPrizes = results.prizes?.filter((p: any) => p.prize_type === 'overall') || [];
+        const leaderboard = overallPrizes.length >= 2 ? overallPrizes.slice(0, 2).map((p: any) => ({
+          name: p.member_name,
+          total_points: p.label?.match(/(\d+) pts/)?.[1] || 0,
+          handicap: results.scorecards?.find((sc: any) => sc.name === p.member_name)?.handicap || 0
+        })) : results.scorecards?.slice(0, 2) || [];
+        
         setLastEventData({
           event_name: lastEvent.course_name,
           event_date: lastEvent.date,
-          leaderboard: results.scorecards?.slice(0, 4) || [],
+          leaderboard,
           front9_winner: results.prizes?.find((p: any) => p.prize_type === 'front_9'),
           back9_winner: results.prizes?.find((p: any) => p.prize_type === 'back_9'),
           twos_winners: twosWinners

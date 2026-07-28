@@ -17,22 +17,46 @@ export default function ResultsPage() {
 
   useEffect(() => {
     fetch('/api/results').then(r => r.json()).then(data => {
-      setPrizes(data.results || []);
-      if (data.event) {
-        setEventName(data.event.name);
-        setEventDate(data.event.date);
-        setCourseName(data.event.course_name);
+      const rawPrizes = data.results || [];
+      const event = data.event;
+      
+      // Check if this is Captain's Prize or President's Prize (special ordering)
+      const isSpecialPrize = event?.name?.includes("Captain") || event?.name?.includes("President");
+      
+      // Sort prizes with special ordering for Captain's/President's Prize
+      const sortedPrizes = isSpecialPrize ? [...rawPrizes].sort((a, b) => {
+        // Special order: 1st Overall, 2nd Overall, Class prizes, 3rd Overall, Other prizes
+        const getOrder = (prize: Prize) => {
+          if (prize.prize_type === 'overall' && prize.position === 1) return 1;
+          if (prize.prize_type === 'overall' && prize.position === 2) return 2;
+          if (prize.prize_type === 'class_1' || prize.prize_type === 'class_2' || prize.prize_type === 'class') return 3;
+          if (prize.prize_type === 'overall' && prize.position === 3) return 4;
+          if (prize.prize_type === 'third_overall') return 4; // Handle 3rd overall as separate type
+          return 5; // All other prizes (NTP, Longest Drive, Twos, Visitors)
+        };
+        const orderA = getOrder(a);
+        const orderB = getOrder(b);
+        if (orderA !== orderB) return orderA - orderB;
+        // Within class prizes, sort by position then class
+        if (orderA === 3 && orderB === 3) {
+          if (a.position !== b.position) return (a.position || 0) - (b.position || 0);
+          return a.prize_type === 'class_1' ? -1 : 1;
+        }
+        // Within same group, sort by position
+        return (a.position || 0) - (b.position || 0);
+      }) : rawPrizes; // Regular events: use original order
+      
+      setPrizes(sortedPrizes);
+      if (event) {
+        setEventName(event.name);
+        setEventDate(event.date);
+        setCourseName(event.course_name);
       }
       setLoading(false);
     }).catch(() => setLoading(false));
   }, []);
 
-  const shareWhatsApp = () => {
-    let text = `🏆 ${eventName} Results\n📍 ${courseName}\n📅 ${new Date(eventDate + 'T12:00:00').toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n`;
-    prizes.forEach(p => { text += `${p.label}\n`; });
-    text += '\n⛳ FairwayConnect';
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  };
+  // WhatsApp share removed - admin only feature
 
   if (loading) {
     return (
@@ -58,14 +82,6 @@ export default function ResultsPage() {
     );
   }
 
-  const overallPrizes = prizes.filter(p => ['overall','class_1','class_2'].includes(p.prize_type));
-  const front9Prizes = prizes.filter(p => p.prize_type.includes('front_9'));
-  const back9Prizes = prizes.filter(p => p.prize_type.includes('back_9'));
-  const ntpPrizes = prizes.filter(p => p.prize_type === 'ntp');
-  const ldPrizes = prizes.filter(p => p.prize_type === 'longest_drive');
-  const twosPrizes = prizes.filter(p => p.prize_type === 'twos');
-  const divisionPrizes = prizes.filter(p => ['division_a', 'division_b', 'best_visitor'].includes(p.prize_type));
-
   return (
     <div className="px-4 pt-6 pb-24">
       <h1 className="text-2xl font-bold text-gray-900 mb-1">{eventName}</h1>
@@ -73,90 +89,19 @@ export default function ResultsPage() {
         📍 {courseName} · {new Date(eventDate + 'T12:00:00').toLocaleDateString('en-IE', { day: 'numeric', month: 'long' })}
       </p>
 
-      {/* Overall */}
-      {overallPrizes.length > 0 && (
-        <div className="space-y-3 mb-4">
-          {overallPrizes.map((p, i) => (
-            <div key={i} className={`bg-white rounded-2xl p-4 shadow-sm ${i === 0 ? 'ring-2 ring-yellow-400' : ''}`}>
-              <p className="text-lg font-bold text-gray-900">{p.label}</p>
-              {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
-            </div>
-          ))}
-        </div>
-      )}
+      {/* All Prizes in Order */}
+      <div className="space-y-2 mb-4">
+        {prizes.map((p, i) => (
+          <div key={i} className={`bg-white rounded-xl p-4 shadow-sm ${
+            p.prize_type === 'overall' && p.position === 1 ? 'ring-2 ring-yellow-400' : ''
+          }`}>
+            <p className="font-bold text-gray-900">{p.label}</p>
+            {p.value > 0 && <p className="text-sm text-fairway-800">€{p.value} prize</p>}
+          </div>
+        ))}
+      </div>
 
-      {/* Front 9 */}
-      {front9Prizes.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {front9Prizes.map((p, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-sm font-bold text-gray-900">{p.label}</p>
-              {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Back 9 */}
-      {back9Prizes.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {back9Prizes.map((p, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-sm font-bold text-gray-900">{p.label}</p>
-              {p.value > 0 && <p className="text-xs text-fairway-800">€{p.value} prize</p>}
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* NTP */}
-      {ntpPrizes.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {ntpPrizes.map((p, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-sm font-bold text-gray-900">{p.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Longest Drive */}
-      {ldPrizes.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {ldPrizes.map((p, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-sm font-bold text-gray-900">{p.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Twos */}
-      {twosPrizes.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {twosPrizes.map((p, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-sm font-bold text-gray-900">{p.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      {/* Division prizes */}
-      {divisionPrizes.length > 0 && (
-        <div className="space-y-2 mb-4">
-          {divisionPrizes.map((p, i) => (
-            <div key={i} className="bg-white rounded-xl p-3 shadow-sm">
-              <p className="text-sm font-bold text-gray-900">{p.label}</p>
-            </div>
-          ))}
-        </div>
-      )}
-
-      <button onClick={shareWhatsApp}
-        className="w-full bg-green-600 text-white rounded-2xl py-3 font-bold text-sm mt-4">
-        📱 Share via WhatsApp
-      </button>
+      {/* WhatsApp share button removed - admin only */}
 
       <Link href="/calendar" className="block w-full text-center bg-white border border-gray-200 text-gray-700 rounded-2xl py-3 font-bold text-sm mt-3">
         📅 View Calendar
