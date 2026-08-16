@@ -1811,7 +1811,7 @@ export default function AdminEventPage({
                             className="w-full border border-gray-200 rounded-xl px-3 py-2.5 text-sm focus:border-fairway-800 focus:outline-none"
                           />
                           <p className="text-xs text-gray-400 mt-1">
-                            Playing handicap > this value
+                            Playing handicap &gt; this value
                           </p>
                         </div>
                       </div>
@@ -4375,7 +4375,18 @@ export default function AdminEventPage({
             {tab === "results" && (
               <div>
                 <div className="flex items-center justify-between mb-4">
-                  <h3 className="font-bold text-gray-900">Results</h3>
+                  <div className="flex items-center gap-2">
+                    <h3 className="font-bold text-gray-900">Results</h3>
+                    {(results?.prizes?.length > 0 || evt?.results_published === 1) && (
+                      <span className={`text-xs px-3 py-1 rounded-full font-medium ${
+                        evt.results_published === 1 
+                          ? 'bg-green-100 text-green-700' 
+                          : 'bg-amber-100 text-amber-700'
+                      }`}>
+                        {evt.results_published === 1 ? '✅ Published to Members' : '🔒 Finalized (Admin Preview)'}
+                      </span>
+                    )}
+                  </div>
                   <div className="flex gap-2">
                     <button
                       onClick={() => {
@@ -4394,9 +4405,9 @@ export default function AdminEventPage({
                     </button>
                     <button
                       onClick={finaliseResults}
-                      className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-sm font-medium transition-colors"
+                      className="px-3 py-1.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg text-sm font-medium transition-colors"
                     >
-                      ✅ Finalise & Publish
+                      🔒 Finalize Results (Admin Preview)
                     </button>
                     {data.event?.status === "finalised" && (
                       <button
