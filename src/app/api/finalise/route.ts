@@ -447,25 +447,10 @@ export async function POST(request: Request) {
     let reason = '';
 
     if (eventType === 'captains' || eventType === 'presidents') {
-      // CAPTAIN'S PRIZE DEDUCTIONS (fixed values, not from settings)
-      if (prizeType === 'overall') {
-        if (position === 1) {
-          deduction = 3;
-          reason = 'Captain\'s Prize Winner';
-        } else if (position === 2) {
-          deduction = 2;
-          reason = 'Captain\'s Prize 2nd Overall';
-        } else if (position === 3) {
-          deduction = 2;
-          reason = 'Captain\'s Prize 3rd Overall';
-        }
-      } else if (prizeType === 'class_1' || prizeType === 'class_2') {
-        if (position === 1 || position === 2) {
-          deduction = 2;
-          const className = prizeType === 'class_1' ? 'Class 1' : 'Class 2';
-          reason = `Captain\'s Prize ${className} ${position === 1 ? '1st' : '2nd'}`;
-        }
-      }
+      // CAPTAIN'S/PRESIDENT'S PRIZE: NO DEDUCTIONS APPLIED
+      // Winners are exempt from handicap deductions per ALGS rules
+      deduction = 0;
+      reason = '';
     } else {
       // STANDARD EVENT DEDUCTIONS (from society settings)
       if (prizeType === 'overall' || prizeType === 'class_1' || prizeType === 'class_2') {
