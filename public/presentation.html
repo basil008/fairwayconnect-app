@@ -1,0 +1,771 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FairwayConnect — Your Society, Sorted</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  html, body { height: 100%; overflow: hidden; font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif; background: #0a0a0a; }
+
+  .deck { position: relative; width: 100vw; height: 100vh; }
+
+  .slide {
+    position: absolute; inset: 0; display: flex; flex-direction: column;
+    justify-content: center; align-items: center; padding: 60px 80px;
+    opacity: 0; transform: translateX(40px); transition: all 0.5s cubic-bezier(0.4, 0, 0.2, 1);
+    pointer-events: none; background: #ffffff;
+  }
+  .slide.active { opacity: 1; transform: translateX(0); pointer-events: auto; }
+  .slide.prev { opacity: 0; transform: translateX(-40px); }
+
+  .slide-dark { background: #1B5E20; color: #ffffff; }
+  .slide-gradient { background: linear-gradient(135deg, #1B5E20 0%, #2E7D32 50%, #388E3C 100%); color: #ffffff; }
+  .slide-light-green { background: #E8F5E9; }
+
+  h1 { font-size: 3rem; font-weight: 900; line-height: 1.1; margin-bottom: 16px; letter-spacing: -0.02em; }
+  h2 { font-size: 2.2rem; font-weight: 800; line-height: 1.2; margin-bottom: 12px; letter-spacing: -0.01em; }
+  h3 { font-size: 1.6rem; font-weight: 700; line-height: 1.3; margin-bottom: 8px; }
+  p { font-size: 1.2rem; line-height: 1.6; color: #555; }
+  .slide-dark p, .slide-gradient p { color: rgba(255,255,255,0.85); }
+
+  .subtitle { font-size: 1.5rem; font-weight: 300; color: #666; margin-top: 8px; }
+  .slide-dark .subtitle, .slide-gradient .subtitle { color: rgba(255,255,255,0.7); }
+
+  .badge { display: inline-block; background: rgba(27,94,32,0.1); color: #1B5E20; padding: 6px 16px; border-radius: 999px; font-size: 0.9rem; font-weight: 600; margin-bottom: 24px; }
+  .slide-dark .badge, .slide-gradient .badge { background: rgba(255,255,255,0.15); color: #fff; }
+
+  .grid-2 { display: grid; grid-template-columns: 1fr 1fr; gap: 32px; width: 100%; max-width: 900px; margin-top: 24px; }
+  .grid-3 { display: grid; grid-template-columns: 1fr 1fr 1fr; gap: 24px; width: 100%; max-width: 900px; margin-top: 24px; }
+
+  .card {
+    background: #fff; border-radius: 20px; padding: 32px 28px; text-align: left;
+    box-shadow: 0 2px 20px rgba(0,0,0,0.06); border: 1px solid #eee;
+  }
+  .card-icon { font-size: 2rem; margin-bottom: 12px; display: block; }
+  .card h3 { font-size: 1.1rem; color: #1a1a1a; margin-bottom: 6px; }
+  .card p { font-size: 0.95rem; color: #666; line-height: 1.5; }
+
+  .slide-dark .card { background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.15); }
+  .slide-dark .card h3 { color: #fff; }
+  .slide-dark .card p { color: rgba(255,255,255,0.7); }
+  .slide-gradient .card { background: rgba(255,255,255,0.12); border: 1px solid rgba(255,255,255,0.18); backdrop-filter: blur(10px); }
+  .slide-gradient .card h3 { color: #fff; }
+  .slide-gradient .card p { color: rgba(255,255,255,0.75); }
+
+  .phone-mockup {
+    width: 260px; height: 500px; background: #1a1a1a; border-radius: 36px;
+    padding: 12px; box-shadow: 0 20px 60px rgba(0,0,0,0.2); flex-shrink: 0;
+    display: flex; align-items: center; justify-content: center;
+  }
+  .phone-screen {
+    width: 100%; height: 100%; background: #f5f5f5; border-radius: 26px;
+    display: flex; flex-direction: column; align-items: center; justify-content: center;
+    padding: 20px; text-align: center; overflow: hidden;
+  }
+  .phone-screen .screen-icon { font-size: 3rem; margin-bottom: 8px; }
+  .phone-screen .screen-title { font-size: 1rem; font-weight: 700; color: #1B5E20; }
+  .phone-screen .screen-sub { font-size: 0.75rem; color: #888; margin-top: 4px; }
+
+  .split { display: flex; align-items: center; gap: 60px; width: 100%; max-width: 960px; }
+  .split-text { flex: 1; text-align: left; }
+  .split-text h2 { color: #1a1a1a; }
+  .split-text p { margin-bottom: 12px; }
+
+  .bullet-list { list-style: none; padding: 0; margin-top: 16px; }
+  .bullet-list li { padding: 10px 0; font-size: 1.1rem; color: #333; display: flex; align-items: flex-start; gap: 12px; }
+  .bullet-list li span.icon { font-size: 1.3rem; flex-shrink: 0; }
+  .slide-dark .bullet-list li { color: rgba(255,255,255,0.9); }
+  .slide-gradient .bullet-list li { color: rgba(255,255,255,0.9); }
+
+  .pain-point {
+    display: flex; align-items: center; gap: 16px; padding: 16px 20px;
+    background: #FFF3E0; border-radius: 12px; margin-bottom: 12px; width: 100%; max-width: 700px;
+  }
+  .pain-point .icon { font-size: 1.5rem; flex-shrink: 0; }
+  .pain-point p { color: #BF360C; font-size: 1rem; font-weight: 500; }
+
+  .stat-row { display: flex; gap: 40px; margin-top: 24px; }
+  .stat-item { text-align: center; }
+  .stat-item .number { font-size: 2.5rem; font-weight: 900; color: #1B5E20; }
+  .slide-dark .stat-item .number, .slide-gradient .stat-item .number { color: #fff; }
+  .stat-item .label { font-size: 0.85rem; color: #888; margin-top: 4px; }
+  .slide-dark .stat-item .label, .slide-gradient .stat-item .label { color: rgba(255,255,255,0.6); }
+
+  .tab-mockup {
+    display: flex; gap: 8px; margin-top: 16px; flex-wrap: wrap;
+  }
+  .tab { padding: 8px 16px; border-radius: 10px; font-size: 0.85rem; font-weight: 600; }
+  .tab-active { background: #1B5E20; color: #fff; }
+  .tab-inactive { background: #E8F5E9; color: #2E7D32; }
+
+  .timeline {
+    display: flex; gap: 20px; margin-top: 24px; flex-wrap: wrap; justify-content: center;
+  }
+  .timeline-item {
+    text-align: center; padding: 16px; background: rgba(255,255,255,0.1);
+    border-radius: 16px; min-width: 160px; border: 1px solid rgba(255,255,255,0.15);
+  }
+  .timeline-item .year { font-size: 1.4rem; font-weight: 800; }
+  .timeline-item .desc { font-size: 0.85rem; color: rgba(255,255,255,0.7); margin-top: 6px; }
+
+  /* Dots nav */
+  .dots {
+    position: fixed; bottom: 30px; left: 50%; transform: translateX(-50%);
+    display: flex; gap: 8px; z-index: 100; padding: 10px 20px;
+    background: rgba(0,0,0,0.6); border-radius: 999px; backdrop-filter: blur(10px);
+  }
+  .dot {
+    width: 10px; height: 10px; border-radius: 50%; background: rgba(255,255,255,0.3);
+    cursor: pointer; transition: all 0.3s ease; border: none; padding: 0;
+  }
+  .dot.active { background: #4CAF50; transform: scale(1.3); }
+  .dot:hover { background: rgba(255,255,255,0.6); }
+
+  .slide-number {
+    position: fixed; top: 20px; right: 30px; font-size: 0.85rem;
+    color: rgba(255,255,255,0.5); z-index: 100; font-weight: 600;
+    background: rgba(0,0,0,0.4); padding: 6px 14px; border-radius: 999px;
+    backdrop-filter: blur(10px);
+  }
+
+  .logo-text { font-size: 4rem; font-weight: 900; letter-spacing: -0.03em; }
+  .logo-text span { color: #66BB6A; }
+
+  .roadmap-badge {
+    display: inline-block; background: rgba(255,255,255,0.15); color: rgba(255,255,255,0.8);
+    padding: 4px 12px; border-radius: 999px; font-size: 0.75rem; font-weight: 600;
+    margin-top: 8px; letter-spacing: 0.05em; text-transform: uppercase;
+  }
+
+  @keyframes fadeIn { from { opacity: 0; transform: translateY(20px); } to { opacity: 1; transform: translateY(0); } }
+  .slide.active .card, .slide.active .pain-point, .slide.active .timeline-item {
+    animation: fadeIn 0.5s ease-out both;
+  }
+  .slide.active .card:nth-child(1), .slide.active .pain-point:nth-child(1) { animation-delay: 0.1s; }
+  .slide.active .card:nth-child(2), .slide.active .pain-point:nth-child(2) { animation-delay: 0.2s; }
+  .slide.active .card:nth-child(3), .slide.active .pain-point:nth-child(3) { animation-delay: 0.3s; }
+  .slide.active .card:nth-child(4), .slide.active .pain-point:nth-child(4) { animation-delay: 0.4s; }
+  .slide.active .card:nth-child(5) { animation-delay: 0.5s; }
+  .slide.active .card:nth-child(6) { animation-delay: 0.6s; }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide slide-gradient active" data-slide="0">
+    <div style="text-align:center;">
+      <div style="font-size:5rem;margin-bottom:12px;">⛳</div>
+      <div class="logo-text">Fairway<span>Connect</span></div>
+      <p class="subtitle" style="font-size:1.8rem;font-weight:400;margin-top:12px;color:rgba(255,255,255,0.8);">Your Society, Sorted.</p>
+      <div style="margin-top:32px;display:flex;gap:16px;justify-content:center;">
+        <span class="badge">Golf Society Management</span>
+        <span class="badge">March 2026</span>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 2: The Problem -->
+  <div class="slide" data-slide="1">
+    <div style="text-align:center;max-width:750px;">
+      <span class="badge">The Problem</span>
+      <h1 style="color:#1a1a1a;">Running a golf society<br>shouldn't feel like a<br><span style="color:#BF360C;">second job</span></h1>
+      <div style="margin-top:32px;text-align:left;">
+        <div class="pain-point"><span class="icon">📋</span><p>Chasing RSVPs via WhatsApp — who's in, who's out?</p></div>
+        <div class="pain-point"><span class="icon">💶</span><p>Collecting entry fees — cash, Revolut, "I'll pay you next time"</p></div>
+        <div class="pain-point"><span class="icon">🖨️</span><p>Printing scorecards, writing names by hand the night before</p></div>
+        <div class="pain-point"><span class="icon">🧮</span><p>Calculating Stableford, countbacks, divisions — on a spreadsheet</p></div>
+        <div class="pain-point"><span class="icon">📱</span><p>Typing up results and sending to 40 people on WhatsApp</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 3: The Solution -->
+  <div class="slide slide-dark" data-slide="2">
+    <div style="text-align:center;max-width:800px;">
+      <span class="badge">The Solution</span>
+      <h1>One app.<br>From event planning<br>to prize-giving.</h1>
+      <p class="subtitle" style="font-size:1.3rem;">FairwayConnect replaces the spreadsheets, the WhatsApp groups, the paper scorecards, and the 3am calculator sessions. Everything your society needs — in one place.</p>
+      <div class="stat-row" style="justify-content:center;">
+        <div class="stat-item"><div class="number">&lt;5s</div><div class="label">Last putt to full results</div></div>
+        <div class="stat-item"><div class="number">0</div><div class="label">Paper scorecards needed</div></div>
+        <div class="stat-item"><div class="number">100%</div><div class="label">Automated countback</div></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 4: Two Experiences -->
+  <div class="slide" data-slide="3">
+    <div style="text-align:center;width:100%;max-width:900px;">
+      <span class="badge">Two Experiences, One App</span>
+      <h2 style="color:#1a1a1a;">Built for Everyone in Your Society</h2>
+      <div class="grid-2" style="margin-top:32px;">
+        <div class="card" style="border-top:4px solid #1B5E20;">
+          <span class="card-icon">🔐</span>
+          <h3>Committee Admin</h3>
+          <p>Full control panel. Create events, manage members, monitor scores, generate results, publish instantly. PIN-protected access.</p>
+          <div class="tab-mockup">
+            <span class="tab tab-active">📊 Dashboard</span>
+            <span class="tab tab-inactive">📅 Season</span>
+            <span class="tab tab-inactive">👥 Members</span>
+            <span class="tab tab-inactive">⚙️ Settings</span>
+          </div>
+        </div>
+        <div class="card" style="border-top:4px solid #66BB6A;">
+          <span class="card-icon">⛳</span>
+          <h3>Members</h3>
+          <p>Personal link or 4-digit code. RSVP with one tap, enter scores live, see the leaderboard update in real-time. No download required.</p>
+          <div class="tab-mockup">
+            <span class="tab tab-active">🏠 Home</span>
+            <span class="tab tab-inactive">📅 Calendar</span>
+            <span class="tab tab-inactive">⛳ Score</span>
+            <span class="tab tab-inactive">📊 Board</span>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 5: Season Setup -->
+  <div class="slide" data-slide="4">
+    <div class="split">
+      <div class="split-text">
+        <span class="badge">Committee Feature</span>
+        <h2 style="color:#1a1a1a;">Season Setup<br>in Minutes</h2>
+        <p>Create your full fixture calendar for the year. Set courses, dates, formats, and fees. Everything flows from here.</p>
+        <ul class="bullet-list">
+          <li><span class="icon">📅</span> 12-event fixture calendar</li>
+          <li><span class="icon">⛳</span> Multiple formats: Stableford, Strokeplay, Team, Matchplay</li>
+          <li><span class="icon">💶</span> Custom entry fees per event</li>
+          <li><span class="icon">🏌️</span> Course data with par, SI, yardage for every hole</li>
+          <li><span class="icon">🏆</span> F1-style OOM points — Best 8 of 12</li>
+        </ul>
+      </div>
+      <div class="phone-mockup">
+        <div class="phone-screen" style="background:#1B5E20;padding:16px;">
+          <div style="color:#fff;text-align:left;width:100%;">
+            <p style="color:rgba(255,255,255,0.6);font-size:0.7rem;font-weight:600;">SEASON 2026</p>
+            <p style="color:#fff;font-size:1rem;font-weight:800;margin-top:4px;">12 Events</p>
+            <div style="margin-top:12px;">
+              <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px;margin-bottom:6px;">
+                <p style="color:#fff;font-size:0.75rem;font-weight:700;">1. Spring Classic</p>
+                <p style="color:rgba(255,255,255,0.6);font-size:0.6rem;">Donabate · 24 Mar · €60</p>
+              </div>
+              <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px;margin-bottom:6px;">
+                <p style="color:#fff;font-size:0.75rem;font-weight:700;">2. Captain's Prize</p>
+                <p style="color:rgba(255,255,255,0.6);font-size:0.6rem;">Portmarnock · 12 Apr · €75</p>
+              </div>
+              <div style="background:rgba(255,255,255,0.1);border-radius:10px;padding:10px;margin-bottom:6px;">
+                <p style="color:#fff;font-size:0.75rem;font-weight:700;">3. Away Day</p>
+                <p style="color:rgba(255,255,255,0.6);font-size:0.6rem;">Lahinch · 3 May · €120</p>
+              </div>
+              <div style="background:rgba(255,255,255,0.15);border-radius:10px;padding:10px;">
+                <p style="color:rgba(255,255,255,0.4);font-size:0.65rem;">+ 9 more events...</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 6: Event Management -->
+  <div class="slide slide-light-green" data-slide="5">
+    <div style="text-align:center;width:100%;max-width:900px;">
+      <span class="badge">Committee Feature</span>
+      <h2 style="color:#1a1a1a;">6-Tab Event Workspace</h2>
+      <p style="margin-bottom:24px;">Everything for one event, all in one place. From setup to prize-giving.</p>
+      <div class="grid-3">
+        <div class="card"><span class="card-icon">📝</span><h3>Details</h3><p>Course, date, format, fees. Edit everything.</p></div>
+        <div class="card"><span class="card-icon">👥</span><h3>Players</h3><p>RSVPs: confirmed, maybe, declined. Add visitors.</p></div>
+        <div class="card"><span class="card-icon">⏰</span><h3>Tee Times</h3><p>Auto-generate groups. 10-min intervals.</p></div>
+        <div class="card"><span class="card-icon">📋</span><h3>Scorecards</h3><p>Live status. Print individual cards.</p></div>
+        <div class="card"><span class="card-icon">🎯</span><h3>Side Comps</h3><p>NTP & Longest Drive. Player picker.</p></div>
+        <div class="card"><span class="card-icon">🏆</span><h3>Results</h3><p>One-click finalise. Auto countback.</p></div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 7: Member Management -->
+  <div class="slide" data-slide="6">
+    <div class="split">
+      <div class="split-text">
+        <span class="badge">Committee Feature</span>
+        <h2 style="color:#1a1a1a;">Full Member<br>Database</h2>
+        <p>Every member has a personal link and 4-digit PIN. No passwords, no accounts, no friction.</p>
+        <ul class="bullet-list">
+          <li><span class="icon">🔗</span> Unique personal link per member</li>
+          <li><span class="icon">🔢</span> 4-digit PIN for quick access</li>
+          <li><span class="icon">👤</span> Full member profiles with handicaps</li>
+          <li><span class="icon">🏷️</span> Visitor management for guests</li>
+          <li><span class="icon">📋</span> Copy all links in one click</li>
+        </ul>
+      </div>
+      <div class="phone-mockup">
+        <div class="phone-screen" style="background:#fff;">
+          <div style="text-align:left;width:100%;padding:8px;">
+            <p style="font-size:0.7rem;color:#1B5E20;font-weight:700;">👥 40 MEMBERS</p>
+            <div style="margin-top:10px;">
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
+                <div><p style="font-size:0.75rem;font-weight:600;color:#1a1a1a;">Séamus O'Brien</p><p style="font-size:0.6rem;color:#888;">Hcp 5 · Captain</p></div>
+                <span style="font-size:0.6rem;background:#E8F5E9;color:#1B5E20;padding:2px 8px;border-radius:99px;font-weight:600;align-self:center;">🔗</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
+                <div><p style="font-size:0.75rem;font-weight:600;color:#1a1a1a;">Pádraig Murphy</p><p style="font-size:0.6rem;color:#888;">Hcp 8 · Secretary</p></div>
+                <span style="font-size:0.6rem;background:#E8F5E9;color:#1B5E20;padding:2px 8px;border-radius:99px;font-weight:600;align-self:center;">🔗</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;border-bottom:1px solid #eee;">
+                <div><p style="font-size:0.75rem;font-weight:600;color:#1a1a1a;">Ciarán Kelly</p><p style="font-size:0.6rem;color:#888;">Hcp 12 · Treasurer</p></div>
+                <span style="font-size:0.6rem;background:#E8F5E9;color:#1B5E20;padding:2px 8px;border-radius:99px;font-weight:600;align-self:center;">🔗</span>
+              </div>
+              <div style="display:flex;justify-content:space-between;padding:8px 0;">
+                <div><p style="font-size:0.75rem;font-weight:600;color:#1a1a1a;">Declan Walsh</p><p style="font-size:0.6rem;color:#888;">Hcp 4</p></div>
+                <span style="font-size:0.6rem;background:#E8F5E9;color:#1B5E20;padding:2px 8px;border-radius:99px;font-weight:600;align-self:center;">🔗</span>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 8: Printable Scorecards -->
+  <div class="slide slide-dark" data-slide="7">
+    <div style="text-align:center;max-width:800px;">
+      <span class="badge">Committee Feature</span>
+      <h1>Printable<br>Scorecards</h1>
+      <p class="subtitle" style="font-size:1.2rem;">Individual scorecards generated for every player. Ready to print. Professional layout.</p>
+      <div class="grid-2" style="margin-top:32px;">
+        <div class="card">
+          <span class="card-icon">👤</span>
+          <h3>Personalised</h3>
+          <p>Player name, handicap, strokes received per hole — all pre-filled.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">⛳</span>
+          <h3>Course Data</h3>
+          <p>Par, stroke index, and yardage for every hole printed on each card.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">✍️</span>
+          <h3>Signature Lines</h3>
+          <p>Player and marker signature areas. Competition-ready format.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🖨️</span>
+          <h3>One-Click Print</h3>
+          <p>Print all scorecards at once. Page breaks between each player.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 9: Personal Link -->
+  <div class="slide" data-slide="8">
+    <div class="split">
+      <div class="phone-mockup">
+        <div class="phone-screen" style="background:#1B5E20;">
+          <div style="text-align:center;">
+            <p style="font-size:3rem;">⛳</p>
+            <p style="color:#fff;font-size:1.2rem;font-weight:800;margin-top:8px;">Hi Séamus! 👋</p>
+            <p style="color:rgba(255,255,255,0.6);font-size:0.7rem;margin-top:4px;">Oscar Golf Society · 2026</p>
+            <div style="background:rgba(255,255,255,0.15);border-radius:14px;padding:16px;margin-top:16px;text-align:left;">
+              <p style="color:rgba(255,255,255,0.6);font-size:0.6rem;text-transform:uppercase;">Next Event</p>
+              <p style="color:#fff;font-size:0.85rem;font-weight:700;margin-top:4px;">Captain's Prize</p>
+              <p style="color:rgba(255,255,255,0.5);font-size:0.65rem;">Portmarnock Links · 12 Apr</p>
+              <div style="display:flex;gap:8px;margin-top:10px;">
+                <div style="flex:1;background:#fff;color:#1B5E20;border-radius:8px;padding:6px;text-align:center;font-size:0.7rem;font-weight:700;">I'm In! ✅</div>
+                <div style="flex:1;background:rgba(255,255,255,0.2);color:#fff;border-radius:8px;padding:6px;text-align:center;font-size:0.7rem;font-weight:600;">Can't Make It</div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="split-text">
+        <span class="badge">Member Experience</span>
+        <h2 style="color:#1a1a1a;">One Tap<br>to Join</h2>
+        <p>Every member gets a personal link. One tap — you're identified. No login, no password, no download.</p>
+        <ul class="bullet-list">
+          <li><span class="icon">🔗</span> Personal link shared via WhatsApp</li>
+          <li><span class="icon">🔢</span> Or enter 4-digit code at the event</li>
+          <li><span class="icon">👤</span> Personalised home screen</li>
+          <li><span class="icon">📱</span> Works on any phone — just a web link</li>
+          <li><span class="icon">⚡</span> No app store, no account creation</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 10: Live Scoring -->
+  <div class="slide slide-gradient" data-slide="9">
+    <div class="split">
+      <div class="split-text">
+        <span class="badge">Member Experience</span>
+        <h1>Live Scoring</h1>
+        <p class="subtitle" style="font-size:1.2rem;">Big colour-coded buttons. Hole-by-hole. Auto Stableford calculation. Works offline.</p>
+        <ul class="bullet-list">
+          <li><span class="icon">🔵</span> Eagle = Blue | Birdie = Light Blue</li>
+          <li><span class="icon">🟢</span> Par = Green</li>
+          <li><span class="icon">🟠</span> Bogey = Orange</li>
+          <li><span class="icon">🔴</span> Double+ = Red</li>
+          <li><span class="icon">📊</span> Running Stableford total on every screen</li>
+          <li><span class="icon">📱</span> Designed for one-handed use on the course</li>
+        </ul>
+      </div>
+      <div class="phone-mockup" style="background:#111;">
+        <div class="phone-screen" style="background:#f5f5f5;">
+          <div style="width:100%;text-align:center;">
+            <div style="background:#1B5E20;border-radius:12px;padding:8px;color:#fff;text-align:left;margin-bottom:8px;display:flex;justify-content:space-between;">
+              <div><p style="font-size:0.55rem;color:rgba(255,255,255,0.7);">Séamus · Hcp 5</p></div>
+              <div style="text-align:right;"><p style="font-size:1.2rem;font-weight:900;">24</p><p style="font-size:0.5rem;color:rgba(255,255,255,0.6);">pts (12/18)</p></div>
+            </div>
+            <p style="font-size:2.5rem;font-weight:900;color:#1B5E20;">13</p>
+            <div style="display:flex;justify-content:center;gap:12px;margin:6px 0;">
+              <div><p style="font-size:0.55rem;color:#888;">Par</p><p style="font-weight:800;font-size:0.9rem;">3</p></div>
+              <div><p style="font-size:0.55rem;color:#888;">SI</p><p style="font-weight:800;font-size:0.9rem;">18</p></div>
+              <div><p style="font-size:0.55rem;color:#888;">Yds</p><p style="font-weight:800;font-size:0.9rem;">148</p></div>
+            </div>
+            <div style="display:grid;grid-template-columns:repeat(5,1fr);gap:6px;margin-top:8px;">
+              <div style="width:36px;height:36px;border-radius:50%;background:#1565C0;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;margin:auto;">1</div>
+              <div style="width:36px;height:36px;border-radius:50%;background:#1E88E5;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;margin:auto;">2</div>
+              <div style="width:36px;height:36px;border-radius:50%;background:#4CAF50;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;margin:auto;box-shadow:0 0 0 3px rgba(27,94,32,0.3);">3</div>
+              <div style="width:36px;height:36px;border-radius:50%;background:#FB8C00;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;margin:auto;">4</div>
+              <div style="width:36px;height:36px;border-radius:50%;background:#E53935;color:#fff;display:flex;align-items:center;justify-content:center;font-weight:700;font-size:0.85rem;margin:auto;">5</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 11: Live Leaderboard -->
+  <div class="slide" data-slide="10">
+    <div class="split">
+      <div class="phone-mockup">
+        <div class="phone-screen" style="background:#f5f5f5;">
+          <div style="width:100%;text-align:left;">
+            <div style="display:flex;justify-content:space-between;align-items:center;">
+              <p style="font-size:0.9rem;font-weight:800;color:#1a1a1a;">Leaderboard</p>
+              <p style="font-size:0.6rem;color:#E53935;font-weight:700;">🔴 LIVE</p>
+            </div>
+            <div style="display:flex;gap:4px;margin:8px 0;background:#eee;border-radius:8px;padding:3px;">
+              <div style="flex:1;background:#fff;border-radius:6px;text-align:center;padding:4px;font-size:0.6rem;font-weight:700;color:#1B5E20;">All</div>
+              <div style="flex:1;text-align:center;padding:4px;font-size:0.6rem;color:#888;">Div A</div>
+              <div style="flex:1;text-align:center;padding:4px;font-size:0.6rem;color:#888;">Div B</div>
+            </div>
+            <div style="background:#fff;border-radius:10px;overflow:hidden;">
+              <div style="display:flex;align-items:center;padding:8px;background:#E8F5E9;border-left:3px solid #1B5E20;">
+                <span style="width:20px;text-align:center;font-size:0.8rem;">🥇</span>
+                <div style="flex:1;margin-left:6px;"><p style="font-size:0.7rem;font-weight:700;color:#1B5E20;">Séamus O'Brien <span style="font-size:0.55rem;font-weight:400;">(You)</span></p><p style="font-size:0.5rem;color:#888;">Hcp 5 · Thru 16</p></div>
+                <p style="font-size:1rem;font-weight:900;color:#1B5E20;">38</p>
+              </div>
+              <div style="display:flex;align-items:center;padding:8px;border-top:1px solid #f0f0f0;">
+                <span style="width:20px;text-align:center;font-size:0.8rem;">🥈</span>
+                <div style="flex:1;margin-left:6px;"><p style="font-size:0.7rem;font-weight:600;">Declan Walsh</p><p style="font-size:0.5rem;color:#888;">Hcp 4 · F</p></div>
+                <p style="font-size:1rem;font-weight:900;color:#1B5E20;">37</p>
+              </div>
+              <div style="display:flex;align-items:center;padding:8px;border-top:1px solid #f0f0f0;">
+                <span style="width:20px;text-align:center;font-size:0.8rem;">🥉</span>
+                <div style="flex:1;margin-left:6px;"><p style="font-size:0.7rem;font-weight:600;">Eoin Ryan</p><p style="font-size:0.5rem;color:#888;">Hcp 7 · Thru 14</p></div>
+                <p style="font-size:1rem;font-weight:900;color:#1B5E20;">35</p>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+      <div class="split-text">
+        <span class="badge">Member Experience</span>
+        <h2 style="color:#1a1a1a;">Live<br>Leaderboard</h2>
+        <p>Watch positions change in real-time as players submit scores. Auto-refreshes every 30 seconds.</p>
+        <ul class="bullet-list">
+          <li><span class="icon">📊</span> Real-time positions as scores come in</li>
+          <li><span class="icon">🏷️</span> Division tabs: All, Div A, Div B, Visitors</li>
+          <li><span class="icon">🎯</span> Side competition results: NTP & Longest Drive</li>
+          <li><span class="icon">🔄</span> Auto-refresh every 30 seconds</li>
+          <li><span class="icon">💚</span> Your position highlighted</li>
+        </ul>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 12: Season Calendar -->
+  <div class="slide slide-light-green" data-slide="11">
+    <div class="split">
+      <div class="split-text">
+        <span class="badge">Member Experience</span>
+        <h2 style="color:#1a1a1a;">Season<br>Calendar</h2>
+        <p>Full fixture list. One-tap RSVP. See past results and upcoming events all in one scrollable view.</p>
+        <ul class="bullet-list">
+          <li><span class="icon">📅</span> All 12 events at a glance</li>
+          <li><span class="icon">✅</span> One-tap RSVP: "I'm In!" or "Can't Make It"</li>
+          <li><span class="icon">🏆</span> Past event winners shown inline</li>
+          <li><span class="icon">📋</span> Expand any event for full details</li>
+          <li><span class="icon">👥</span> See how many players are confirmed</li>
+        </ul>
+      </div>
+      <div class="phone-mockup">
+        <div class="phone-screen" style="background:#f5f5f5;">
+          <div style="width:100%;text-align:left;">
+            <p style="font-size:0.9rem;font-weight:800;color:#1a1a1a;">Season Calendar</p>
+            <p style="font-size:0.6rem;color:#888;margin-bottom:10px;">2026 Season · 12 events</p>
+            <div style="background:#fff;border-radius:10px;padding:10px;margin-bottom:6px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:0.8rem;">✅</span>
+                <div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;">1. Spring Classic</p><p style="font-size:0.55rem;color:#888;">Donabate · 24 Mar</p></div>
+                <span style="font-size:0.55rem;color:#1B5E20;font-weight:600;">🏆 38 pts</span>
+              </div>
+            </div>
+            <div style="background:#fff;border-radius:10px;padding:10px;margin-bottom:6px;border:2px solid #1B5E20;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:0.8rem;">🔜</span>
+                <div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;">2. Captain's Prize</p><p style="font-size:0.55rem;color:#888;">Portmarnock · 12 Apr</p></div>
+              </div>
+              <span style="display:inline-block;background:#E8F5E9;color:#1B5E20;font-size:0.5rem;font-weight:700;padding:2px 6px;border-radius:99px;margin-top:4px;">📋 Next Event</span>
+            </div>
+            <div style="background:#fff;border-radius:10px;padding:10px;margin-bottom:6px;">
+              <div style="display:flex;align-items:center;gap:6px;">
+                <span style="font-size:0.8rem;">🔜</span>
+                <div style="flex:1;"><p style="font-size:0.7rem;font-weight:700;">3. Away Day</p><p style="font-size:0.55rem;color:#888;">Lahinch · 3 May</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 13: Auto-Prize Engine -->
+  <div class="slide slide-dark" data-slide="12">
+    <div style="text-align:center;max-width:800px;">
+      <span class="badge">The Engine</span>
+      <h1>Auto-Prize<br>Engine</h1>
+      <p class="subtitle" style="font-size:1.3rem;">From last putt to full results — in under 5 seconds.<br>No spreadsheets. No arguments. No mistakes.</p>
+      <div class="grid-3" style="margin-top:32px;">
+        <div class="card">
+          <span class="card-icon">🥇</span>
+          <h3>Overall Top 3</h3>
+          <p>With R&A standard countback. Back 9 → Back 6 → Back 3 → Last hole.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🏆</span>
+          <h3>Division Prizes</h3>
+          <p>Division A (0-14) and Division B (15+). Excludes overall winners.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🎯</span>
+          <h3>Side Comps</h3>
+          <p>Nearest the Pin and Longest Drive, per hole. Recorded live.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🏷️</span>
+          <h3>Best Visitor</h3>
+          <p>Automatically identified from member types. Fair for everyone.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">📱</span>
+          <h3>WhatsApp Share</h3>
+          <p>One tap to format and share results via WhatsApp.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">🖨️</span>
+          <h3>Print Ready</h3>
+          <p>Clean print layout for clubhouse noticeboard.</p>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 14: Order of Merit -->
+  <div class="slide" data-slide="13">
+    <div class="split">
+      <div class="split-text">
+        <span class="badge">Season-Long Competition</span>
+        <h2 style="color:#1a1a1a;">Order of<br>Merit</h2>
+        <p>F1-style points system. 25-18-15-12-10-8-6-4-2-1 for top 10. Best 8 of 12 events count. Bonus points for NTP & LD wins.</p>
+        <ul class="bullet-list">
+          <li><span class="icon">🏆</span> Overall standings with position tracking</li>
+          <li><span class="icon">📊</span> Division standings: Div A & Div B</li>
+          <li><span class="icon">👤</span> Player profiles with full event history</li>
+          <li><span class="icon">📈</span> Category awards: Most Improved, Best Average</li>
+          <li><span class="icon">⭐</span> Bonus points for side competition wins</li>
+        </ul>
+      </div>
+      <div class="phone-mockup">
+        <div class="phone-screen" style="background:#f5f5f5;">
+          <div style="width:100%;text-align:left;">
+            <p style="font-size:0.9rem;font-weight:800;color:#1a1a1a;">Order of Merit</p>
+            <p style="font-size:0.6rem;color:#888;margin-bottom:8px;">2026 Season · 1 of 12 events</p>
+            <div style="display:flex;gap:4px;margin-bottom:10px;background:#eee;border-radius:8px;padding:3px;">
+              <div style="flex:1;background:#fff;border-radius:6px;text-align:center;padding:4px;font-size:0.6rem;font-weight:700;color:#1B5E20;">Overall</div>
+              <div style="flex:1;text-align:center;padding:4px;font-size:0.6rem;color:#888;">Div A</div>
+              <div style="flex:1;text-align:center;padding:4px;font-size:0.6rem;color:#888;">Div B</div>
+            </div>
+            <div style="background:#fff;border-radius:10px;overflow:hidden;">
+              <div style="display:flex;align-items:center;padding:8px;border-bottom:1px solid #f0f0f0;">
+                <span style="width:18px;font-size:0.8rem;">🥇</span>
+                <div style="flex:1;margin-left:4px;"><p style="font-size:0.7rem;font-weight:700;">Séamus O'Brien</p><p style="font-size:0.5rem;color:#888;">Hcp 5 · 1 event</p></div>
+                <div style="text-align:right;"><p style="font-size:0.9rem;font-weight:900;color:#1B5E20;">26</p><p style="font-size:0.45rem;color:#888;">pts</p></div>
+              </div>
+              <div style="display:flex;align-items:center;padding:8px;border-bottom:1px solid #f0f0f0;">
+                <span style="width:18px;font-size:0.8rem;">🥈</span>
+                <div style="flex:1;margin-left:4px;"><p style="font-size:0.7rem;font-weight:600;">Declan Walsh</p><p style="font-size:0.5rem;color:#888;">Hcp 4 · 1 event</p></div>
+                <div style="text-align:right;"><p style="font-size:0.9rem;font-weight:900;color:#1B5E20;">18</p><p style="font-size:0.45rem;color:#888;">pts</p></div>
+              </div>
+              <div style="display:flex;align-items:center;padding:8px;">
+                <span style="width:18px;font-size:0.8rem;">🥉</span>
+                <div style="flex:1;margin-left:4px;"><p style="font-size:0.7rem;font-weight:600;">Eoin Ryan</p><p style="font-size:0.5rem;color:#888;">Hcp 7 · 1 event</p></div>
+                <div style="text-align:right;"><p style="font-size:0.9rem;font-weight:900;color:#1B5E20;">15</p><p style="font-size:0.45rem;color:#888;">pts</p></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- SLIDE 15: WhatsApp Integration -->
+  <div class="slide slide-gradient" data-slide="14">
+    <div style="text-align:center;max-width:800px;">
+      <span class="badge">Roadmap</span>
+      <h1>WhatsApp<br>Integration</h1>
+      <p class="subtitle" style="font-size:1.2rem;">Meet your members where they already are.</p>
+      <div class="grid-2" style="margin-top:32px;">
+        <div class="card">
+          <span class="card-icon">🏆</span>
+          <h3>Results Delivery</h3>
+          <p>Full results formatted and sent directly to your society WhatsApp group. One tap from the admin panel.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">✅</span>
+          <h3>RSVP Buttons</h3>
+          <p>Members RSVP directly from WhatsApp notifications. No link clicking needed.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">💶</span>
+          <h3>Payment Reminders</h3>
+          <p>Automatic reminders for outstanding entry fees. Track who's paid.</p>
+        </div>
+        <div class="card">
+          <span class="card-icon">📢</span>
+          <h3>Event Announcements</h3>
+          <p>Fixture reminders, tee time notifications, and last-minute updates.</p>
+        </div>
+      </div>
+      <div class="roadmap-badge" style="margin-top:24px;">Future Feature — On Roadmap for V2</div>
+    </div>
+  </div>
+
+  <!-- SLIDE 16: Next Steps -->
+  <div class="slide slide-dark" data-slide="15">
+    <div style="text-align:center;max-width:900px;">
+      <span class="badge">Next Steps</span>
+      <h1>Let's Tee Off</h1>
+      <p class="subtitle" style="font-size:1.2rem;">A phased approach to building the future of golf society management.</p>
+      <div class="timeline" style="margin-top:40px;">
+        <div class="timeline-item">
+          <div class="year">Q2 2026</div>
+          <div class="desc">Pilot with 10 golf societies<br>across Dublin & Leinster</div>
+        </div>
+        <div class="timeline-item">
+          <div class="year">Q3 2026</div>
+          <div class="desc">Iterate based on feedback<br>Add WhatsApp integration</div>
+        </div>
+        <div class="timeline-item">
+          <div class="year">Q4 2026</div>
+          <div class="desc">Public launch<br>Ireland-wide rollout</div>
+        </div>
+      </div>
+      <div style="margin-top:48px;">
+        <p style="font-size:4rem;">⛳</p>
+        <div class="logo-text" style="font-size:2.5rem;margin-top:8px;">Fairway<span>Connect</span></div>
+        <p style="color:rgba(255,255,255,0.5);font-size:1rem;margin-top:8px;">Your Society, Sorted.</p>
+      </div>
+    </div>
+  </div>
+
+</div>
+
+<!-- Dots Navigation -->
+<div class="dots" id="dots"></div>
+<div class="slide-number" id="slideNum">1 / 16</div>
+
+<script>
+  const slides = document.querySelectorAll('.slide');
+  const dotsContainer = document.getElementById('dots');
+  const slideNum = document.getElementById('slideNum');
+  let current = 0;
+  const total = slides.length;
+
+  // Create dots
+  for (let i = 0; i < total; i++) {
+    const dot = document.createElement('button');
+    dot.className = 'dot' + (i === 0 ? ' active' : '');
+    dot.onclick = () => goTo(i);
+    dotsContainer.appendChild(dot);
+  }
+
+  function goTo(n) {
+    if (n < 0 || n >= total || n === current) return;
+    slides[current].className = 'slide' + getSlideClasses(current) + (n > current ? ' prev' : '');
+    current = n;
+    slides[current].className = 'slide' + getSlideClasses(current) + ' active';
+    updateDots();
+  }
+
+  function getSlideClasses(idx) {
+    const el = slides[idx];
+    let cls = '';
+    if (el.classList.contains('slide-dark')) cls += ' slide-dark';
+    if (el.classList.contains('slide-gradient')) cls += ' slide-gradient';
+    if (el.classList.contains('slide-light-green')) cls += ' slide-light-green';
+    return cls;
+  }
+
+  function updateDots() {
+    document.querySelectorAll('.dot').forEach((d, i) => {
+      d.className = 'dot' + (i === current ? ' active' : '');
+    });
+    slideNum.textContent = (current + 1) + ' / ' + total;
+  }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', e => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') {
+      e.preventDefault();
+      goTo(current + 1);
+    } else if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') {
+      e.preventDefault();
+      goTo(current - 1);
+    } else if (e.key === 'Home') {
+      e.preventDefault();
+      goTo(0);
+    } else if (e.key === 'End') {
+      e.preventDefault();
+      goTo(total - 1);
+    }
+  });
+
+  // Click navigation (left/right halves)
+  document.addEventListener('click', e => {
+    if (e.target.closest('.dots') || e.target.closest('button')) return;
+    const x = e.clientX / window.innerWidth;
+    if (x > 0.6) goTo(current + 1);
+    else if (x < 0.4) goTo(current - 1);
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', e => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', e => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) goTo(current + 1);
+      else goTo(current - 1);
+    }
+  });
+</script>
+</body>
+</html>

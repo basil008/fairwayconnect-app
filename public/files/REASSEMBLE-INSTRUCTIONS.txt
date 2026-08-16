@@ -1,0 +1,67 @@
+LTEC CONNECT SOURCE CODE - REASSEMBLY INSTRUCTIONS
+=================================================
+
+The complete source code has been split into 5 parts for easier download.
+
+FILES TO DOWNLOAD:
+------------------
+LtecConnect-Source-Part-aa (50 MB)
+LtecConnect-Source-Part-ab (50 MB)
+LtecConnect-Source-Part-ac (50 MB)
+LtecConnect-Source-Part-ad (50 MB)
+LtecConnect-Source-Part-ae (15 MB)
+
+Total: 215 MB
+
+
+WINDOWS REASSEMBLY:
+------------------
+1. Download all 5 files to the same folder
+2. Open Command Prompt (cmd) in that folder
+3. Run this command:
+
+   copy /b LtecConnect-Source-Part-aa+LtecConnect-Source-Part-ab+LtecConnect-Source-Part-ac+LtecConnect-Source-Part-ad+LtecConnect-Source-Part-ae LtecConnect-Source-Code-24April2026.tar.gz
+
+4. Extract the .tar.gz file using 7-Zip or WinRAR
+5. You now have the complete source code!
+
+
+MACOS/LINUX REASSEMBLY:
+----------------------
+1. Download all 5 files to the same folder
+2. Open Terminal in that folder
+3. Run this command:
+
+   cat LtecConnect-Source-Part-* > LtecConnect-Source-Code-24April2026.tar.gz
+
+4. Extract:
+
+   tar -xzf LtecConnect-Source-Code-24April2026.tar.gz
+
+5. You now have the complete source code!
+
+
+VERIFICATION:
+------------
+Final file should be exactly 225,387,588 bytes (215 MB)
+
+You can verify with:
+Windows: dir LtecConnect-Source-Code-24April2026.tar.gz
+Mac/Linux: ls -lh LtecConnect-Source-Code-24April2026.tar.gz
+
+
+CONTENTS:
+---------
+After extraction, you'll have:
+- Complete Next.js application (632 MB uncompressed)
+- All source code, components, APIs
+- Package.json with dependencies
+- Ready to deploy with: npm install && npm run build
+
+
+SUPPORT:
+--------
+If you have any issues, contact Basil Cooney or Oscar (AI Partner)
+
+Backup Date: April 24, 2026
+System: Ltec Connect - Integrated CRM, ERP & Project Management

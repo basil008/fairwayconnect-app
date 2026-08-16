@@ -1,0 +1,1051 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FairwayConnect — Investor Deck</title>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&display=swap');
+
+  :root {
+    --green-900: #1B5E20;
+    --green-800: #2E7D32;
+    --green-700: #388E3C;
+    --green-600: #43A047;
+    --green-500: #4CAF50;
+    --green-400: #66BB6A;
+    --green-300: #81C784;
+    --green-200: #A5D6A7;
+    --green-100: #C8E6C9;
+    --green-50: #E8F5E9;
+    --gray-900: #1a1a2e;
+    --gray-700: #374151;
+    --gray-600: #4B5563;
+    --gray-500: #6B7280;
+    --gray-400: #9CA3AF;
+    --gray-300: #D1D5DB;
+    --gray-200: #E5E7EB;
+    --gray-100: #F3F4F6;
+    --white: #FFFFFF;
+    --gold: #F59E0B;
+    --blue: #3B82F6;
+    --red: #EF4444;
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+    background: var(--gray-900);
+    overflow: hidden;
+    -webkit-font-smoothing: antialiased;
+  }
+
+  .deck {
+    width: 100vw;
+    height: 100vh;
+    position: relative;
+  }
+
+  .slide {
+    position: absolute;
+    top: 0; left: 0;
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 60px 80px;
+    opacity: 0;
+    transform: translateX(40px);
+    transition: opacity 0.5s ease, transform 0.5s ease;
+    pointer-events: none;
+    background: var(--white);
+  }
+
+  .slide.active {
+    opacity: 1;
+    transform: translateX(0);
+    pointer-events: auto;
+  }
+
+  .slide.exit {
+    opacity: 0;
+    transform: translateX(-40px);
+  }
+
+  /* Branding bar */
+  .brand-bar {
+    position: absolute;
+    top: 0; left: 0; right: 0;
+    height: 5px;
+    background: linear-gradient(90deg, var(--green-900), var(--green-500), var(--green-300));
+  }
+
+  /* Slide number */
+  .slide-number {
+    position: absolute;
+    bottom: 30px;
+    right: 40px;
+    font-size: 13px;
+    color: var(--gray-400);
+    font-weight: 500;
+    letter-spacing: 0.5px;
+  }
+
+  /* Footer brand */
+  .slide-footer {
+    position: absolute;
+    bottom: 30px;
+    left: 40px;
+    font-size: 13px;
+    color: var(--green-800);
+    font-weight: 600;
+    letter-spacing: 1px;
+  }
+
+  /* Progress bar */
+  .progress-bar {
+    position: fixed;
+    bottom: 0;
+    left: 0;
+    height: 3px;
+    background: linear-gradient(90deg, var(--green-700), var(--green-400));
+    transition: width 0.4s ease;
+    z-index: 100;
+  }
+
+  /* Typography */
+  h1 { font-size: 52px; font-weight: 800; color: var(--green-900); line-height: 1.15; letter-spacing: -1.5px; margin-bottom: 16px; }
+  h2 { font-size: 40px; font-weight: 700; color: var(--green-900); line-height: 1.2; letter-spacing: -1px; margin-bottom: 24px; }
+  h3 { font-size: 26px; font-weight: 600; color: var(--green-800); line-height: 1.3; margin-bottom: 16px; }
+  .subtitle { font-size: 22px; font-weight: 400; color: var(--gray-600); line-height: 1.5; margin-bottom: 24px; }
+  .tagline { font-size: 26px; font-weight: 300; color: var(--gray-600); font-style: italic; margin-bottom: 32px; }
+  p { font-size: 18px; color: var(--gray-700); line-height: 1.6; }
+
+  /* Cards */
+  .card-grid { display: grid; gap: 20px; margin-top: 16px; }
+  .card-grid.cols-2 { grid-template-columns: 1fr 1fr; }
+  .card-grid.cols-3 { grid-template-columns: 1fr 1fr 1fr; }
+  .card-grid.cols-4 { grid-template-columns: 1fr 1fr 1fr 1fr; }
+
+  .card {
+    background: var(--gray-100);
+    border-radius: 16px;
+    padding: 28px;
+    border: 1px solid var(--gray-200);
+  }
+  .card.green {
+    background: var(--green-50);
+    border-color: var(--green-200);
+  }
+  .card.dark {
+    background: var(--green-900);
+    color: var(--white);
+    border: none;
+  }
+  .card.dark h3, .card.dark p, .card.dark .stat-value, .card.dark .stat-label { color: var(--white); }
+  .card.dark .stat-label { color: var(--green-200); }
+  .card .icon { font-size: 36px; margin-bottom: 12px; display: block; }
+  .card h3 { font-size: 20px; margin-bottom: 8px; }
+  .card p { font-size: 15px; color: var(--gray-600); line-height: 1.5; }
+
+  /* Stats */
+  .stat-value { font-size: 42px; font-weight: 800; color: var(--green-900); letter-spacing: -1px; }
+  .stat-label { font-size: 14px; font-weight: 500; color: var(--gray-500); text-transform: uppercase; letter-spacing: 1px; margin-top: 4px; }
+  .stat-row { display: flex; gap: 48px; margin: 24px 0; }
+  .stat-item { text-align: center; }
+
+  /* Bullet list */
+  .bullet-list { list-style: none; margin-top: 8px; }
+  .bullet-list li {
+    font-size: 18px;
+    color: var(--gray-700);
+    padding: 10px 0 10px 32px;
+    position: relative;
+    line-height: 1.5;
+    border-bottom: 1px solid var(--gray-100);
+  }
+  .bullet-list li:last-child { border: none; }
+  .bullet-list li::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 18px;
+    width: 10px;
+    height: 10px;
+    border-radius: 50%;
+    background: var(--green-500);
+  }
+  .bullet-list.red li::before { background: var(--red); }
+
+  /* Feature matrix */
+  .matrix { width: 100%; border-collapse: collapse; margin-top: 12px; font-size: 14px; }
+  .matrix th { text-align: left; padding: 10px 12px; background: var(--green-900); color: white; font-weight: 600; font-size: 12px; text-transform: uppercase; letter-spacing: 0.5px; }
+  .matrix th:first-child { border-radius: 8px 0 0 0; }
+  .matrix th:last-child { border-radius: 0 8px 0 0; }
+  .matrix td { padding: 8px 12px; border-bottom: 1px solid var(--gray-200); text-align: center; }
+  .matrix td:first-child { text-align: left; font-weight: 500; color: var(--gray-700); }
+  .matrix tr:nth-child(even) { background: var(--gray-50); }
+  .matrix .yes { color: var(--green-600); font-weight: 700; }
+  .matrix .partial { color: var(--gold); font-weight: 600; }
+  .matrix .no { color: var(--gray-300); }
+  .matrix .fc { background: var(--green-50); font-weight: 700; }
+
+  /* Revenue bar chart */
+  .revenue-chart { display: flex; align-items: flex-end; gap: 24px; height: 220px; margin: 24px 0; padding: 0 20px; }
+  .bar-group { flex: 1; display: flex; flex-direction: column; align-items: center; }
+  .bar {
+    width: 80px;
+    border-radius: 8px 8px 0 0;
+    background: linear-gradient(180deg, var(--green-500), var(--green-800));
+    transition: height 0.8s ease;
+    position: relative;
+    min-height: 4px;
+  }
+  .bar-label { font-size: 13px; color: var(--gray-500); margin-top: 8px; font-weight: 600; }
+  .bar-value { font-size: 15px; font-weight: 700; color: var(--green-900); margin-bottom: 6px; }
+
+  /* Timeline */
+  .timeline { display: flex; align-items: flex-start; margin: 24px 0; position: relative; }
+  .timeline::before {
+    content: '';
+    position: absolute;
+    top: 20px;
+    left: 0;
+    right: 0;
+    height: 4px;
+    background: var(--green-200);
+    border-radius: 2px;
+  }
+  .timeline-item { flex: 1; text-align: center; position: relative; padding-top: 44px; }
+  .timeline-dot {
+    position: absolute;
+    top: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    background: var(--green-600);
+    border: 3px solid var(--white);
+    box-shadow: 0 0 0 3px var(--green-200);
+  }
+  .timeline-date { font-size: 13px; font-weight: 700; color: var(--green-800); margin-bottom: 4px; }
+  .timeline-text { font-size: 14px; color: var(--gray-600); line-height: 1.4; }
+
+  /* Flow arrow */
+  .flow { display: flex; align-items: center; gap: 8px; margin: 16px 0; flex-wrap: wrap; }
+  .flow-step {
+    background: var(--green-50);
+    border: 2px solid var(--green-300);
+    border-radius: 12px;
+    padding: 12px 20px;
+    font-size: 16px;
+    font-weight: 600;
+    color: var(--green-900);
+  }
+  .flow-arrow { font-size: 22px; color: var(--green-400); }
+
+  /* Highlight box */
+  .highlight-box {
+    background: linear-gradient(135deg, var(--green-900), var(--green-700));
+    border-radius: 16px;
+    padding: 28px 36px;
+    color: var(--white);
+    margin: 20px 0;
+  }
+  .highlight-box h3 { color: var(--green-200); font-size: 16px; text-transform: uppercase; letter-spacing: 2px; }
+  .highlight-box .big-number { font-size: 48px; font-weight: 800; color: var(--white); }
+  .highlight-box p { color: var(--green-100); }
+
+  /* Two column layout */
+  .two-col { display: grid; grid-template-columns: 1fr 1fr; gap: 40px; align-items: start; }
+  .two-col.wide-left { grid-template-columns: 1.3fr 0.7fr; }
+  .two-col.wide-right { grid-template-columns: 0.7fr 1.3fr; }
+
+  /* Pain visual */
+  .pain-grid { display: grid; grid-template-columns: 1fr auto 1fr; gap: 24px; align-items: center; margin-top: 20px; }
+  .pain-vs { font-size: 28px; font-weight: 800; color: var(--gray-400); }
+  .pain-card {
+    border-radius: 16px;
+    padding: 32px;
+  }
+  .pain-card.bad { background: #FEF2F2; border: 2px solid #FECACA; }
+  .pain-card.good { background: var(--green-50); border: 2px solid var(--green-200); }
+  .pain-card .icon { font-size: 48px; }
+  .pain-card h3 { margin-top: 12px; }
+  .pain-card.bad h3 { color: var(--red); }
+  .pain-card.good h3 { color: var(--green-700); }
+  .pain-item { font-size: 16px; color: var(--gray-600); padding: 6px 0; }
+  .pain-item .emoji { margin-right: 8px; }
+
+  /* Revenue stream pills */
+  .stream-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 12px; margin-top: 20px; }
+  .stream-pill {
+    border-radius: 12px;
+    padding: 20px;
+    text-align: center;
+  }
+  .stream-pill .amount { font-size: 22px; font-weight: 800; margin-top: 8px; }
+  .stream-pill .label { font-size: 13px; font-weight: 500; margin-top: 4px; }
+  .stream-pill.primary { background: var(--green-900); color: white; }
+  .stream-pill.primary .label { color: var(--green-200); }
+  .stream-pill.secondary { background: var(--green-50); color: var(--green-900); border: 1px solid var(--green-200); }
+  .stream-pill.secondary .label { color: var(--green-700); }
+
+  /* Nav hint */
+  .nav-hint {
+    position: fixed;
+    bottom: 12px;
+    left: 50%;
+    transform: translateX(-50%);
+    font-size: 12px;
+    color: var(--gray-400);
+    z-index: 200;
+    opacity: 0.6;
+    pointer-events: none;
+  }
+
+  /* Title slide special */
+  .slide.title-slide {
+    background: linear-gradient(160deg, var(--white) 0%, var(--green-50) 100%);
+    text-align: center;
+    justify-content: center;
+    align-items: center;
+  }
+  .title-slide .logo-text {
+    font-size: 72px;
+    font-weight: 900;
+    color: var(--green-900);
+    letter-spacing: -3px;
+    margin-bottom: 4px;
+  }
+  .title-slide .logo-accent { color: var(--green-500); }
+  .title-slide .logo-icon { font-size: 48px; margin-bottom: 16px; }
+  .title-slide .author { font-size: 16px; color: var(--gray-500); font-weight: 400; margin-top: 40px; letter-spacing: 2px; text-transform: uppercase; }
+
+  /* Responsive */
+  @media (max-width: 1024px) {
+    .slide { padding: 40px 48px; }
+    h1 { font-size: 38px; }
+    h2 { font-size: 32px; }
+    .card-grid.cols-3 { grid-template-columns: 1fr 1fr; }
+    .card-grid.cols-4 { grid-template-columns: 1fr 1fr; }
+    .stream-grid { grid-template-columns: 1fr 1fr; }
+    .two-col { grid-template-columns: 1fr; }
+    .pain-grid { grid-template-columns: 1fr; }
+    .pain-vs { text-align: center; }
+  }
+</style>
+</head>
+<body>
+<div class="deck" id="deck">
+
+  <!-- SLIDE 1: Title -->
+  <div class="slide title-slide active" data-slide="1">
+    <div class="brand-bar"></div>
+    <div class="logo-icon">⛳</div>
+    <div class="logo-text">Fairway<span class="logo-accent">Connect</span></div>
+    <div class="tagline">"From Tee Time to Prize Time — Your Society, Sorted"</div>
+    <div class="flow" style="justify-content:center;">
+      <span class="flow-step">Event Planning</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">Live Scoring</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">Auto-Prizes</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">Instant Results</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">Payments</span>
+    </div>
+    <div class="author">Basil Cooney &nbsp;|&nbsp; March 2026</div>
+    <div class="slide-number">1 / 12</div>
+  </div>
+
+  <!-- SLIDE 2: The Problem -->
+  <div class="slide" data-slide="2">
+    <div class="brand-bar"></div>
+    <h2>The Problem</h2>
+    <p class="subtitle">Society organisers are unpaid heroes drowning in admin</p>
+
+    <div class="pain-grid">
+      <div class="pain-card bad">
+        <div class="icon">😤</div>
+        <h3>Today: The Chaos</h3>
+        <div class="pain-item"><span class="emoji">📱</span> WhatsApp group chaos — RSVPs buried in banter</div>
+        <div class="pain-item"><span class="emoji">📊</span> Spreadsheets for scoring — manual countbacks</div>
+        <div class="pain-item"><span class="emoji">💶</span> Chasing cash — "I'll pay you next week"</div>
+        <div class="pain-item"><span class="emoji">📧</span> Manual results emails — if they send one at all</div>
+        <div class="pain-item"><span class="emoji">⏰</span> 60+ minutes admin per event</div>
+        <div class="pain-item"><span class="emoji">🔧</span> 3–5 separate tools stitched together</div>
+      </div>
+      <div class="pain-vs">VS</div>
+      <div class="pain-card good">
+        <div class="icon">😎</div>
+        <h3>With FairwayConnect</h3>
+        <div class="pain-item"><span class="emoji">✅</span> One-tap RSVP via WhatsApp buttons</div>
+        <div class="pain-item"><span class="emoji">🏆</span> Auto prizes in &lt;5 seconds</div>
+        <div class="pain-item"><span class="emoji">💳</span> Apple Pay — zero cash collection</div>
+        <div class="pain-item"><span class="emoji">📱</span> Instant WhatsApp results with leaderboard image</div>
+        <div class="pain-item"><span class="emoji">⚡</span> 5 minutes total admin per event</div>
+        <div class="pain-item"><span class="emoji">🎯</span> One platform. Everything. Done.</div>
+      </div>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">2 / 12</div>
+  </div>
+
+  <!-- SLIDE 3: The Solution -->
+  <div class="slide" data-slide="3">
+    <div class="brand-bar"></div>
+    <h2>The Solution</h2>
+    <p class="subtitle">End-to-end golf society management. WhatsApp-native. Radically simple.</p>
+
+    <div class="flow" style="margin: 24px 0;">
+      <span class="flow-step">📋 Create Event</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">📱 WhatsApp RSVP</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">💳 Collect Payments</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">⛳ Live Scoring</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">🏆 Auto Prizes</span>
+      <span class="flow-arrow">→</span>
+      <span class="flow-step">📊 Instant Results</span>
+    </div>
+
+    <div class="card-grid cols-3">
+      <div class="card green">
+        <span class="icon">🏆</span>
+        <h3>Auto-Prize Engine</h3>
+        <p>Industry first. Automatic prize allocation with countback — &lt;5 seconds from last putt to full results. No competitor has this.</p>
+      </div>
+      <div class="card green">
+        <span class="icon">📱</span>
+        <h3>WhatsApp Native</h3>
+        <p>98% open rate. Interactive RSVP buttons, auto-generated leaderboard images, payment reminders — all in the app they already use.</p>
+      </div>
+      <div class="card green">
+        <span class="icon">💳</span>
+        <h3>Stripe Payments</h3>
+        <p>Apple Pay, Google Pay, Stripe Connect. No more chasing cash. Automatic invoicing, refunds, and treasurer dashboard.</p>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top:20px; text-align:center;">
+      <p style="font-size:20px; font-weight:600;">Designed so a 70-year-old who only uses WhatsApp, RTÉ Player, and Paddy Power can figure it out in 10 seconds.</p>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">3 / 12</div>
+  </div>
+
+  <!-- SLIDE 4: Market Opportunity -->
+  <div class="slide" data-slide="4">
+    <div class="brand-bar"></div>
+    <h2>Market Opportunity</h2>
+    <p class="subtitle">A large, growing market with zero complete solutions</p>
+
+    <div class="two-col">
+      <div>
+        <div class="card-grid cols-2" style="margin-top:0;">
+          <div class="card dark">
+            <div class="stat-value">50,000+</div>
+            <div class="stat-label">Golf Societies Globally</div>
+          </div>
+          <div class="card dark">
+            <div class="stat-value">$70B+</div>
+            <div class="stat-label">Global Golf Market</div>
+          </div>
+          <div class="card dark">
+            <div class="stat-value">7M+</div>
+            <div class="stat-label">Society Golfers</div>
+          </div>
+          <div class="card dark">
+            <div class="stat-value">0</div>
+            <div class="stat-label">Complete Solutions</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3>Geographic Breakdown</h3>
+        <ul class="bullet-list">
+          <li><strong>Ireland:</strong> ~1,200 societies, ~200K golfers</li>
+          <li><strong>UK:</strong> ~8,000 societies, ~1M+ golfers</li>
+          <li><strong>Europe:</strong> ~10,000+ societies</li>
+          <li><strong>North America:</strong> ~15,000+ groups</li>
+          <li><strong>Australia/NZ:</strong> ~5,000+ societies</li>
+        </ul>
+
+        <div style="margin-top: 20px;">
+          <div class="card green" style="padding:20px;">
+            <div style="display:flex; justify-content:space-between;">
+              <div><div class="stat-label">TAM</div><div style="font-size:24px; font-weight:800; color:var(--green-900);">€5M+ ARR</div></div>
+              <div><div class="stat-label">SAM</div><div style="font-size:24px; font-weight:800; color:var(--green-900);">€2.5M</div></div>
+              <div><div class="stat-label">SOM (Y3)</div><div style="font-size:24px; font-weight:800; color:var(--green-900);">€1.25M</div></div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">4 / 12</div>
+  </div>
+
+  <!-- SLIDE 5: Competitive Landscape -->
+  <div class="slide" data-slide="5">
+    <div class="brand-bar"></div>
+    <h2>Competitive Landscape</h2>
+    <p class="subtitle">12 critical features. No competitor covers them all. We do.</p>
+
+    <table class="matrix">
+      <thead>
+        <tr>
+          <th>Feature</th>
+          <th>Golfify</th>
+          <th>VPAR</th>
+          <th>GameBook</th>
+          <th>Squabbit</th>
+          <th>ParUp</th>
+          <th>Quick9</th>
+          <th class="fc" style="background:var(--green-600);">FairwayConnect</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr><td>Event Planning</td><td class="yes">●</td><td class="partial">◑</td><td class="no">○</td><td class="no">○</td><td class="yes">●</td><td class="yes">●</td><td class="fc yes">●</td></tr>
+        <tr><td>Member RSVP</td><td class="partial">◑</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="yes">●</td><td class="partial">◑</td><td class="fc yes">●</td></tr>
+        <tr><td>Digital Scorecard</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="no">○</td><td class="fc yes">●</td></tr>
+        <tr><td>Live Leaderboard</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="yes">●</td><td class="no">○</td><td class="fc yes">●</td></tr>
+        <tr><td style="font-weight:700; color:var(--green-900);">⚡ Auto Prize Engine</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="fc yes" style="font-size:18px;">●</td></tr>
+        <tr><td>Auto Email Results</td><td class="partial">◑</td><td class="partial">◑</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="fc yes">●</td></tr>
+        <tr><td style="font-weight:700; color:var(--green-900);">📱 WhatsApp Integration</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="fc yes" style="font-size:18px;">●</td></tr>
+        <tr><td>In-App Chat</td><td class="partial">◑</td><td class="yes">●</td><td class="partial">◑</td><td class="no">○</td><td class="no">○</td><td class="partial">◑</td><td class="fc yes">●</td></tr>
+        <tr><td style="font-weight:700; color:var(--green-900);">💳 Payment Collection</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="partial">◑</td><td class="no">○</td><td class="fc yes" style="font-size:18px;">●</td></tr>
+        <tr><td>Order of Merit</td><td class="yes">●</td><td class="yes">●</td><td class="partial">◑</td><td class="partial">◑</td><td class="partial">◑</td><td class="no">○</td><td class="fc yes">●</td></tr>
+        <tr><td>Handicap Management</td><td class="partial">◑</td><td class="yes">●</td><td class="partial">◑</td><td class="yes">●</td><td class="yes">●</td><td class="no">○</td><td class="fc yes">●</td></tr>
+        <tr><td>Social & Banter</td><td class="partial">◑</td><td class="partial">◑</td><td class="yes">●</td><td class="no">○</td><td class="no">○</td><td class="no">○</td><td class="fc yes">●</td></tr>
+      </tbody>
+    </table>
+
+    <div class="highlight-box" style="margin-top:16px; text-align:center; padding:16px 28px;">
+      <p style="font-size:18px; font-weight:600; margin:0;">FairwayConnect: 12/12 features &nbsp;|&nbsp; Next closest: 7/12 &nbsp;|&nbsp; Auto-Prize + WhatsApp + Payments = unique combination</p>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">5 / 12</div>
+  </div>
+
+  <!-- SLIDE 6: The Moat -->
+  <div class="slide" data-slide="6">
+    <div class="brand-bar"></div>
+    <h2>The Moat — 3 Industry Firsts</h2>
+    <p class="subtitle">Features no competitor has. Switching costs that lock them in.</p>
+
+    <div class="card-grid cols-3">
+      <div class="card dark" style="text-align:center; padding:36px 28px;">
+        <span class="icon" style="font-size:52px;">🏆</span>
+        <h3 style="font-size:22px; margin-top:8px;">Auto-Prize Engine</h3>
+        <p style="font-size:36px; font-weight:800; color:var(--green-300); margin:12px 0;">&lt;5 seconds</p>
+        <p>From last putt to complete prize allocation. Automatic countback. Configurable rules. No manual work.</p>
+        <p style="color:var(--green-300); font-weight:600; margin-top:12px;">Zero competitors have this</p>
+      </div>
+      <div class="card dark" style="text-align:center; padding:36px 28px;">
+        <span class="icon" style="font-size:52px;">📱</span>
+        <h3 style="font-size:22px; margin-top:8px;">WhatsApp Integration</h3>
+        <p style="font-size:36px; font-weight:800; color:var(--green-300); margin:12px 0;">98% open rate</p>
+        <p>Interactive RSVP buttons. Auto-generated leaderboard images. Payment links. In the app they already use 50x/day.</p>
+        <p style="color:var(--green-300); font-weight:600; margin-top:12px;">Zero competitors have this</p>
+      </div>
+      <div class="card dark" style="text-align:center; padding:36px 28px;">
+        <span class="icon" style="font-size:52px;">💳</span>
+        <h3 style="font-size:22px; margin-top:8px;">End-to-End Payments</h3>
+        <p style="font-size:36px; font-weight:800; color:var(--green-300); margin:12px 0;">Zero cash</p>
+        <p>Stripe Connect. Apple Pay. Google Pay. Auto-invoicing. Refunds. Instalment plans. Treasurer dashboard.</p>
+        <p style="color:var(--green-300); font-weight:600; margin-top:12px;">Only 1 competitor has partial coverage</p>
+      </div>
+    </div>
+
+    <div style="margin-top:24px;">
+      <h3 style="font-size:18px; color:var(--gray-600);">Why This Moat Deepens Over Time</h3>
+      <div class="card-grid cols-4" style="margin-top:8px;">
+        <div class="card" style="padding:16px; text-align:center;">
+          <div style="font-size:28px;">🔄</div>
+          <p style="font-size:13px; font-weight:600; margin-top:4px;">Network Effects</p>
+          <p style="font-size:12px;">More societies → more courses → more sponsors</p>
+        </div>
+        <div class="card" style="padding:16px; text-align:center;">
+          <div style="font-size:28px;">📊</div>
+          <p style="font-size:13px; font-weight:600; margin-top:4px;">Data Moat</p>
+          <p style="font-size:12px;">Unique scoring data across thousands of societies</p>
+        </div>
+        <div class="card" style="padding:16px; text-align:center;">
+          <div style="font-size:28px;">❤️</div>
+          <p style="font-size:13px; font-weight:600; margin-top:4px;">Emotional Lock-In</p>
+          <p style="font-size:12px;">Season history, photos, banter — doesn't transfer</p>
+        </div>
+        <div class="card" style="padding:16px; text-align:center;">
+          <div style="font-size:28px;">⏱️</div>
+          <p style="font-size:13px; font-weight:600; margin-top:4px;">6–12 Month Lead</p>
+          <p style="font-size:12px;">Head start before any competitor can replicate</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">6 / 12</div>
+  </div>
+
+  <!-- SLIDE 7: Revenue Model -->
+  <div class="slide" data-slide="7">
+    <div class="brand-bar"></div>
+    <h2>7 Revenue Streams</h2>
+    <p class="subtitle">Diversified model. Transaction fees are the biggest line.</p>
+
+    <div class="stream-grid">
+      <div class="stream-pill primary">
+        <div style="font-size:28px;">💳</div>
+        <div class="amount">€400K</div>
+        <div class="label">Transaction Fees (2.5%)</div>
+        <div style="font-size:11px; margin-top:4px; color:var(--green-300);">Biggest line at scale</div>
+      </div>
+      <div class="stream-pill primary">
+        <div style="font-size:28px;">📦</div>
+        <div class="amount">€223K</div>
+        <div class="label">SaaS Subscriptions</div>
+        <div style="font-size:11px; margin-top:4px; color:var(--green-300);">€99/yr Pro · €499/yr Federation</div>
+      </div>
+      <div class="stream-pill secondary">
+        <div style="font-size:28px;">📢</div>
+        <div class="amount">€300K</div>
+        <div class="label">Advertising & Sponsors</div>
+        <div style="font-size:11px; margin-top:4px;">Free-tier ads · Sponsored leaderboards</div>
+      </div>
+      <div class="stream-pill secondary">
+        <div style="font-size:28px;">⛳</div>
+        <div class="amount">€100K</div>
+        <div class="label">Course Partnerships</div>
+        <div style="font-size:11px; margin-top:4px;">Featured listings · Booking commission</div>
+      </div>
+      <div class="stream-pill secondary">
+        <div style="font-size:28px;">🤝</div>
+        <div class="amount">€80K</div>
+        <div class="label">Corporate Events</div>
+        <div style="font-size:11px; margin-top:4px;">€299–€999 per event</div>
+      </div>
+      <div class="stream-pill secondary">
+        <div style="font-size:28px;">💚</div>
+        <div class="amount">€100K</div>
+        <div class="label">Charity Events</div>
+        <div style="font-size:11px; margin-top:4px;">€199 per premium charity event</div>
+      </div>
+      <div class="stream-pill secondary">
+        <div style="font-size:28px;">📊</div>
+        <div class="amount">€50K</div>
+        <div class="label">Data & Marketplace</div>
+        <div style="font-size:11px; margin-top:4px;">Industry reports · Golf marketplace</div>
+      </div>
+      <div class="stream-pill primary" style="background: linear-gradient(135deg, var(--green-900), var(--green-600));">
+        <div style="font-size:28px;">🎯</div>
+        <div class="amount">€1.25M</div>
+        <div class="label">Total Year 3</div>
+        <div style="font-size:11px; margin-top:4px; color:var(--green-200);">6.5× SaaS alone</div>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top:20px; padding:16px 28px; text-align:center;">
+      <p style="font-size:16px; font-weight:500; margin:0;">💡 <strong>Key insight:</strong> SaaS is the foundation, but transaction fees (2.5% on every payment) scale with usage and become the dominant revenue stream. Every euro flowing through FairwayConnect generates commission.</p>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">7 / 12</div>
+  </div>
+
+  <!-- SLIDE 8: Revenue Projections -->
+  <div class="slide" data-slide="8">
+    <div class="brand-bar"></div>
+    <h2>Revenue Projections</h2>
+    <p class="subtitle">€70K Year 1 → €1.25M Year 3 → €3.2M Year 5</p>
+
+    <div class="two-col">
+      <div>
+        <div class="revenue-chart" id="revenueChart">
+          <div class="bar-group">
+            <div class="bar-value">€70K</div>
+            <div class="bar" style="height: 15px; background: var(--green-700);"></div>
+            <div class="bar-label">Year 1</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-value">€410K</div>
+            <div class="bar" style="height: 56px; background: linear-gradient(180deg, var(--green-500), var(--green-800));"></div>
+            <div class="bar-label">Year 2</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-value">€1.25M</div>
+            <div class="bar" style="height: 128px; background: linear-gradient(180deg, var(--green-400), var(--green-700));"></div>
+            <div class="bar-label">Year 3</div>
+          </div>
+          <div class="bar-group">
+            <div class="bar-value" style="color:var(--green-600);">€3.2M</div>
+            <div class="bar" style="height: 210px; background: linear-gradient(180deg, var(--green-300), var(--green-900));"></div>
+            <div class="bar-label">Year 5</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <table class="matrix" style="font-size:13px;">
+          <thead>
+            <tr><th>Stream</th><th>Y1</th><th>Y3</th><th>Y5</th></tr>
+          </thead>
+          <tbody>
+            <tr><td>SaaS</td><td>€30K</td><td>€223K</td><td>€500K</td></tr>
+            <tr><td><strong>Transaction Fees</strong></td><td>€25K</td><td><strong>€400K</strong></td><td><strong>€1M</strong></td></tr>
+            <tr><td>Corporate</td><td>€10K</td><td>€80K</td><td>€200K</td></tr>
+            <tr><td>Charity</td><td>€5K</td><td>€100K</td><td>€200K</td></tr>
+            <tr><td>Advertising</td><td>€0</td><td>€300K</td><td>€800K</td></tr>
+            <tr><td>Courses</td><td>€0</td><td>€100K</td><td>€300K</td></tr>
+            <tr><td>Data</td><td>€0</td><td>€50K</td><td>€200K</td></tr>
+            <tr style="background:var(--green-50); font-weight:700;"><td><strong>TOTAL</strong></td><td><strong>€70K</strong></td><td><strong>€1.25M</strong></td><td><strong>€3.2M</strong></td></tr>
+          </tbody>
+        </table>
+
+        <div class="card green" style="margin-top:16px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div class="stat-label">Break-Even</div>
+              <div style="font-size:28px; font-weight:800; color:var(--green-900);">Month 14–18</div>
+            </div>
+            <div>
+              <div class="stat-label">LTV:CAC</div>
+              <div style="font-size:28px; font-weight:800; color:var(--green-900);">10–33×</div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">8 / 12</div>
+  </div>
+
+  <!-- SLIDE 9: Corporate & Charity -->
+  <div class="slide" data-slide="9">
+    <div class="brand-bar"></div>
+    <h2>Corporate & Charity Opportunity</h2>
+    <p class="subtitle">High-margin verticals that leverage the core platform</p>
+
+    <div class="two-col">
+      <div>
+        <div class="card" style="border-left: 4px solid var(--green-600); margin-bottom:16px;">
+          <h3>🤝 Corporate Golf Events</h3>
+          <p style="margin-bottom:12px;">Companies spend <strong>€5,000–€50,000</strong> on corporate golf days. FairwayConnect offers white-label event management.</p>
+          <ul class="bullet-list" style="margin:0;">
+            <li>Branded leaderboards with sponsor logos</li>
+            <li>Professional results emails & WhatsApp</li>
+            <li>Live TV leaderboard in clubhouse</li>
+            <li>Post-event analytics package</li>
+          </ul>
+          <div style="margin-top:12px; padding:12px; background:var(--green-50); border-radius:8px;">
+            <strong>€299–€999 per event</strong> · Target: 200 events/yr = <strong>€80K revenue</strong>
+          </div>
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--gold);">
+          <h3>🎯 The Golf Marketplace</h3>
+          <p>Contextual product advertising powered by player data.</p>
+          <p style="font-style:italic; color:var(--gray-500); margin-top:8px;">"You averaged 245 yards this season — the TaylorMade Qi10 could add 15 yards →"</p>
+          <div style="margin-top:8px; padding:8px; background:var(--gray-100); border-radius:8px; font-size:14px;">
+            5–10% affiliate commission · €50K–€200K/yr at scale
+          </div>
+        </div>
+      </div>
+      <div>
+        <div class="card" style="border-left: 4px solid var(--red); margin-bottom:16px;">
+          <h3>💚 Charity Golf Events</h3>
+          <p style="margin-bottom:12px;"><strong>5,000+ charity golf events</strong> in Ireland/UK annually.</p>
+          <ul class="bullet-list" style="margin:0;">
+            <li>Online donation integration during events</li>
+            <li>Fundraising thermometer on live leaderboard</li>
+            <li>Sponsor recognition across all outputs</li>
+            <li>Automated thank-you with tax receipts</li>
+            <li>Auction/raffle integration</li>
+          </ul>
+          <div style="margin-top:12px; padding:12px; background:#FEF2F2; border-radius:8px;">
+            <strong>Free standard</strong> · Premium: €199/event · <strong>"Every charity golf day, powered by FairwayConnect"</strong>
+          </div>
+        </div>
+
+        <div class="card" style="border-left: 4px solid var(--blue);">
+          <h3>🏢 Enterprise Use Cases</h3>
+          <ul class="bullet-list" style="margin:0;">
+            <li>Team building: quarterly company golf outings</li>
+            <li>Client entertainment: financial services, law firms</li>
+            <li>Inter-company leagues: Google vs Meta golf</li>
+            <li>Conference side events</li>
+            <li>President's Club incentive trips</li>
+          </ul>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">9 / 12</div>
+  </div>
+
+  <!-- SLIDE 10: Go-to-Market -->
+  <div class="slide" data-slide="10">
+    <div class="brand-bar"></div>
+    <h2>Go-to-Market: Ireland First</h2>
+    <p class="subtitle">Concentric circles. Home market → UK → Global.</p>
+
+    <div class="timeline">
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">APR 2026</div>
+        <div class="timeline-text"><strong>Pilot</strong><br>10 Irish societies<br>Free for 3 months</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">SEP 2026</div>
+        <div class="timeline-text"><strong>Ireland Launch</strong><br>200 societies target<br>App Store + PR push</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">Q1 2027</div>
+        <div class="timeline-text"><strong>UK Expansion</strong><br>500 societies target<br>England Golf partner</div>
+      </div>
+      <div class="timeline-item">
+        <div class="timeline-dot"></div>
+        <div class="timeline-date">2028</div>
+        <div class="timeline-text"><strong>Global</strong><br>Australia, US, Canada<br>5,000+ societies</div>
+      </div>
+    </div>
+
+    <div class="card-grid cols-3" style="margin-top:28px;">
+      <div class="card green">
+        <h3>🇮🇪 Phase 1: Ireland</h3>
+        <p style="font-size:14px;">Basil's personal golf connections. Golf Ireland partnership. Club Ambassador Programme. PR: Irish Times, Golf Digest Ireland. Referral: €20 credit per society referred.</p>
+        <div style="margin-top:10px; font-weight:700; color:var(--green-800);">Target: 200 societies</div>
+      </div>
+      <div class="card green">
+        <h3>🇬🇧 Phase 2: UK</h3>
+        <p style="font-size:14px;">England Golf, Scottish Golf partnerships. London/Manchester/Birmingham networks. Corporate market entry via UK event companies. National Club Golfer, Golf Monthly coverage.</p>
+        <div style="margin-top:10px; font-weight:700; color:var(--green-800);">Target: 500 societies</div>
+      </div>
+      <div class="card green">
+        <h3>🌍 Phase 3: Global</h3>
+        <p style="font-size:14px;">Australia, US, Canada, Netherlands, Spain. Localisation: language, currency, handicap systems. Channel partnerships with golf tour operators and equipment retailers.</p>
+        <div style="margin-top:10px; font-weight:700; color:var(--green-800);">Target: 5,000+ societies</div>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top:16px; padding:14px 28px; text-align:center;">
+      <p style="font-size:16px; font-weight:500; margin:0;">🎯 Ireland is the perfect test market: dense society culture, personal connections, small enough to iterate fast, big enough to validate.</p>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">10 / 12</div>
+  </div>
+
+  <!-- SLIDE 11: Investment -->
+  <div class="slide" data-slide="11">
+    <div class="brand-bar"></div>
+    <h2>Investment</h2>
+    <p class="subtitle">Lean investment. Clear path to break-even. Bootstrap option available.</p>
+
+    <div class="two-col">
+      <div>
+        <div class="card dark" style="margin-bottom:16px;">
+          <h3 style="color:var(--green-300); text-transform:uppercase; letter-spacing:2px; font-size:14px;">Total Year 1 Investment</h3>
+          <div class="stat-value" style="color:white; font-size:52px;">€200K–€305K</div>
+          <p style="color:var(--green-200); margin-top:8px;">Development + Marketing + Operations</p>
+        </div>
+
+        <div class="card-grid cols-2" style="margin-top:0;">
+          <div class="card" style="text-align:center; padding:20px;">
+            <div class="stat-label">Development</div>
+            <div style="font-size:22px; font-weight:800; color:var(--green-900);">€147K–€225K</div>
+          </div>
+          <div class="card" style="text-align:center; padding:20px;">
+            <div class="stat-label">Marketing + Ops</div>
+            <div style="font-size:22px; font-weight:800; color:var(--green-900);">€38K–€61K</div>
+          </div>
+        </div>
+      </div>
+      <div>
+        <h3 style="font-size:18px;">Bootstrap Path (Recommended)</h3>
+        <div class="card green" style="margin-bottom:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; color:var(--green-900);">Phase 1: MVP</div>
+              <div style="font-size:14px; color:var(--gray-600);">Months 1–4</div>
+            </div>
+            <div style="font-size:22px; font-weight:800; color:var(--green-900);">€75K</div>
+          </div>
+        </div>
+        <div class="card green" style="margin-bottom:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; color:var(--green-900);">Phase 2: Launch</div>
+              <div style="font-size:14px; color:var(--gray-600);">Months 5–8</div>
+            </div>
+            <div style="font-size:22px; font-weight:800; color:var(--green-900);">€50K</div>
+          </div>
+        </div>
+        <div class="card green" style="margin-bottom:12px; padding:16px;">
+          <div style="display:flex; justify-content:space-between; align-items:center;">
+            <div>
+              <div style="font-weight:700; color:var(--green-900);">Phase 3+: Scale</div>
+              <div style="font-size:14px; color:var(--gray-600);">Month 9 onwards</div>
+            </div>
+            <div style="font-size:18px; font-weight:700; color:var(--green-600);">Revenue-funded</div>
+          </div>
+        </div>
+
+        <div class="card" style="border: 2px solid var(--green-500); padding:16px; text-align:center;">
+          <div style="font-size:14px; font-weight:600; color:var(--gray-500); text-transform:uppercase; letter-spacing:1px;">Return on Investment</div>
+          <div style="font-size:32px; font-weight:800; color:var(--green-900); margin:8px 0;">5–10× by Year 3</div>
+          <div style="font-size:14px; color:var(--gray-600);">€200K invested → €1.25M revenue</div>
+        </div>
+      </div>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">11 / 12</div>
+  </div>
+
+  <!-- SLIDE 12: The Ask -->
+  <div class="slide" data-slide="12">
+    <div class="brand-bar"></div>
+    <h2>Next Steps</h2>
+    <p class="subtitle">Four milestones to validate and launch.</p>
+
+    <div class="card-grid cols-4">
+      <div class="card dark" style="text-align:center; padding:32px 20px;">
+        <div style="font-size:42px; font-weight:900; color:var(--green-400);">01</div>
+        <h3 style="font-size:18px; margin-top:8px;">Pilot Societies</h3>
+        <p style="font-size:14px;">10 Irish societies<br>Free for 3 months<br><strong>April 2026</strong></p>
+      </div>
+      <div class="card dark" style="text-align:center; padding:32px 20px;">
+        <div style="font-size:42px; font-weight:900; color:var(--green-400);">02</div>
+        <h3 style="font-size:18px; margin-top:8px;">UX Design Sprint</h3>
+        <p style="font-size:14px;">4-week intensive<br>Core workflow prototype<br><strong>April 2026</strong></p>
+      </div>
+      <div class="card dark" style="text-align:center; padding:32px 20px;">
+        <div style="font-size:42px; font-weight:900; color:var(--green-400);">03</div>
+        <h3 style="font-size:18px; margin-top:8px;">MVP Development</h3>
+        <p style="font-size:14px;">4-month build<br>React Native + Node.js<br><strong>May–Aug 2026</strong></p>
+      </div>
+      <div class="card dark" style="text-align:center; padding:32px 20px;">
+        <div style="font-size:42px; font-weight:900; color:var(--green-400);">04</div>
+        <h3 style="font-size:18px; margin-top:8px;">Ireland Launch</h3>
+        <p style="font-size:14px;">Public launch<br>200 society target<br><strong>September 2026</strong></p>
+      </div>
+    </div>
+
+    <div style="margin-top:32px;">
+      <h3 style="font-size:20px; color:var(--gray-700);">Key Decisions</h3>
+      <div class="card-grid cols-3" style="margin-top:8px;">
+        <div class="card" style="border-top: 4px solid var(--green-600); padding:20px;">
+          <h3 style="font-size:16px;">Go / No-Go</h3>
+          <p style="font-size:14px;">Based on pilot validation — do 10 societies confirm they'd pay €99/year?</p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--gold); padding:20px;">
+          <h3 style="font-size:16px;">Bootstrap vs. Seed</h3>
+          <p style="font-size:14px;">€75K self-funded Phase 1, or raise €250K–€500K seed to accelerate?</p>
+        </div>
+        <div class="card" style="border-top: 4px solid var(--blue); padding:20px;">
+          <h3 style="font-size:16px;">Build Team</h3>
+          <p style="font-size:14px;">Ireland-based vs nearshore hybrid. UX local, dev flexible.</p>
+        </div>
+      </div>
+    </div>
+
+    <div class="highlight-box" style="margin-top:24px; text-align:center;">
+      <p style="font-size:22px; font-weight:700; margin:0;">The market needs FairwayConnect. The gap is clear. The question is speed.</p>
+      <p style="font-size:16px; margin-top:8px; color:var(--green-200);">From Tee Time to Prize Time — Your Society, Sorted. ⛳</p>
+    </div>
+
+    <div class="slide-footer">FAIRWAYCONNECT</div>
+    <div class="slide-number">12 / 12</div>
+  </div>
+
+</div>
+
+<!-- Progress bar -->
+<div class="progress-bar" id="progressBar"></div>
+
+<!-- Nav hint -->
+<div class="nav-hint">← → Arrow keys or click to navigate · Press F for fullscreen</div>
+
+<script>
+(function() {
+  const slides = document.querySelectorAll('.slide');
+  const progressBar = document.getElementById('progressBar');
+  let current = 0;
+  const total = slides.length;
+
+  function updateProgress() {
+    progressBar.style.width = ((current + 1) / total * 100) + '%';
+  }
+
+  function goTo(index) {
+    if (index < 0 || index >= total || index === current) return;
+    slides[current].classList.remove('active');
+    slides[current].classList.add('exit');
+    setTimeout(() => slides[current === index ? current : current].classList.remove('exit'), 500);
+
+    const prev = current;
+    current = index;
+    slides[current].classList.add('active');
+
+    // Clean up exit class from previous
+    setTimeout(() => { slides[prev].classList.remove('exit'); }, 500);
+
+    updateProgress();
+  }
+
+  function next() { goTo(current + 1); }
+  function prev() { goTo(current - 1); }
+
+  // Keyboard navigation
+  document.addEventListener('keydown', (e) => {
+    if (e.key === 'ArrowRight' || e.key === 'ArrowDown' || e.key === ' ') { e.preventDefault(); next(); }
+    if (e.key === 'ArrowLeft' || e.key === 'ArrowUp') { e.preventDefault(); prev(); }
+    if (e.key === 'Home') { e.preventDefault(); goTo(0); }
+    if (e.key === 'End') { e.preventDefault(); goTo(total - 1); }
+    if (e.key === 'f' || e.key === 'F') {
+      if (!document.fullscreenElement) {
+        document.documentElement.requestFullscreen();
+      } else {
+        document.exitFullscreen();
+      }
+    }
+  });
+
+  // Click navigation (left/right halves)
+  document.addEventListener('click', (e) => {
+    if (e.target.closest('a, button, input, select, textarea')) return;
+    if (e.clientX > window.innerWidth / 2) next();
+    else prev();
+  });
+
+  // Touch swipe
+  let touchStartX = 0;
+  document.addEventListener('touchstart', (e) => { touchStartX = e.touches[0].clientX; });
+  document.addEventListener('touchend', (e) => {
+    const diff = touchStartX - e.changedTouches[0].clientX;
+    if (Math.abs(diff) > 50) {
+      if (diff > 0) next(); else prev();
+    }
+  });
+
+  // Initial state
+  updateProgress();
+})();
+</script>
+</body>
+</html>

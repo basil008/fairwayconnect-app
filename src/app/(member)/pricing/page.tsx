@@ -1,0 +1,227 @@
+'use client'
+
+import { useState, useEffect } from 'react'
+import {
+  CurrencyEuroIcon,
+  CalendarIcon,
+  UserGroupIcon,
+  TrophyIcon,
+  GiftIcon
+} from '@heroicons/react/24/outline'
+
+interface PriceItem {
+  id: string
+  name: string
+  type: 'event' | 'membership' | 'prize' | 'other'
+  amount: number
+  description: string
+  isActive: boolean
+  season: string
+}
+
+export default function MemberPricingPage() {
+  const [prices, setPrices] = useState<PriceItem[]>([])
+  const [loading, setLoading] = useState(true)
+  const [selectedType, setSelectedType] = useState<string>('all')
+
+  useEffect(() => {
+    fetchPrices()
+  }, [])
+
+  const fetchPrices = async () => {
+    setLoading(true)
+    try {
+      const response = await fetch('/api/pricing')
+      if (response.ok) {
+        const data = await response.json()
+        // Only show active prices to members
+        setPrices(data.filter((price: PriceItem) => price.isActive))
+      }
+    } catch (error) {
+      console.error('Failed to fetch prices:', error)
+    }
+    setLoading(false)
+  }
+
+  const getTypeIcon = (type: string) => {
+    switch (type) {
+      case 'event': return <CalendarIcon className="h-6 w-6 text-blue-600" />
+      case 'membership': return <UserGroupIcon className="h-6 w-6 text-green-600" />
+      case 'prize': return <TrophyIcon className="h-6 w-6 text-yellow-600" />
+      case 'other': return <GiftIcon className="h-6 w-6 text-purple-600" />
+      default: return <CurrencyEuroIcon className="h-6 w-6 text-gray-600" />
+    }
+  }
+
+  const getTypeColor = (type: string) => {
+    switch (type) {
+      case 'event': return 'bg-blue-50 border-blue-200'
+      case 'membership': return 'bg-green-50 border-green-200'
+      case 'prize': return 'bg-yellow-50 border-yellow-200'
+      case 'other': return 'bg-purple-50 border-purple-200'
+      default: return 'bg-gray-50 border-gray-200'
+    }
+  }
+
+  const formatCurrency = (amount: number) => {
+    return new Intl.NumberFormat('en-IE', {
+      style: 'currency',
+      currency: 'EUR'
+    }).format(amount)
+  }
+
+  const getFilteredPrices = () => {
+    if (selectedType === 'all') return prices
+    return prices.filter(price => price.type === selectedType)
+  }
+
+  const getPricesByType = (type: string) => {
+    return prices.filter(price => price.type === type)
+  }
+
+  return (
+    <div className="pb-20">
+      <div className="bg-white border-b border-gray-200 px-4 py-4">
+        <h1 className="text-xl font-bold text-gray-900">ALGS Pricing</h1>
+        <p className="text-sm text-gray-600">2026 Season Fees & Prizes</p>
+      </div>
+
+      <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
+        {/* Header */}
+        <div className="text-center">
+          <h1 className="text-2xl font-bold text-gray-900 mb-2">2026 Season Pricing</h1>
+          <p className="text-gray-600">
+            All fees and prize information for Aer Lingus Golf Society
+          </p>
+        </div>
+
+        {/* Quick Stats */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="flex items-center">
+              <CalendarIcon className="h-8 w-8 text-blue-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">Tournament Fees</p>
+                <p className="text-lg font-bold">{getPricesByType('event').length} Events</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="flex items-center">
+              <UserGroupIcon className="h-8 w-8 text-green-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">Membership</p>
+                <p className="text-lg font-bold">€{getPricesByType('membership').find(p => p.name.includes('Annual'))?.amount || 50}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="flex items-center">
+              <TrophyIcon className="h-8 w-8 text-yellow-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">1st Prize</p>
+                <p className="text-lg font-bold">€{getPricesByType('prize').find(p => p.name.includes('1st'))?.amount || 100}</p>
+              </div>
+            </div>
+          </div>
+          
+          <div className="bg-white p-4 rounded-lg border">
+            <div className="flex items-center">
+              <GiftIcon className="h-8 w-8 text-purple-600 mr-3" />
+              <div>
+                <p className="text-sm text-gray-600">Other Items</p>
+                <p className="text-lg font-bold">{getPricesByType('other').length} Items</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        {/* Filter Tabs */}
+        <div className="flex flex-wrap gap-2 bg-white p-4 rounded-lg border">
+          {[
+            { key: 'all', label: 'All', icon: '📋' },
+            { key: 'event', label: 'Tournament Fees', icon: '📅' },
+            { key: 'membership', label: 'Membership', icon: '👥' },
+            { key: 'prize', label: 'Prizes', icon: '🏆' },
+            { key: 'other', label: 'Other Items', icon: '🎁' }
+          ].map(filter => (
+            <button
+              key={filter.key}
+              onClick={() => setSelectedType(filter.key)}
+              className={`flex items-center space-x-2 px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
+                selectedType === filter.key
+                  ? 'bg-green-600 text-white'
+                  : 'bg-gray-100 text-gray-700 hover:bg-gray-200'
+              }`}
+            >
+              <span>{filter.icon}</span>
+              <span>{filter.label}</span>
+            </button>
+          ))}
+        </div>
+
+        {/* Pricing Grid */}
+        {loading ? (
+          <div className="text-center py-12">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-green-600 mx-auto"></div>
+            <p className="text-gray-600 mt-2">Loading pricing information...</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+            {getFilteredPrices().map((price) => (
+              <div 
+                key={price.id} 
+                className={`p-4 rounded-lg border-2 ${getTypeColor(price.type)}`}
+              >
+                <div className="flex items-start justify-between mb-3">
+                  <div className="flex items-center space-x-2">
+                    {getTypeIcon(price.type)}
+                    <span className="text-xs font-medium text-gray-500 uppercase tracking-wide">
+                      {price.type}
+                    </span>
+                  </div>
+                  <span className="text-lg font-bold text-gray-900">
+                    {formatCurrency(price.amount)}
+                  </span>
+                </div>
+                
+                <h3 className="font-semibold text-gray-900 mb-2">{price.name}</h3>
+                
+                {price.description && (
+                  <p className="text-sm text-gray-600 mb-3">{price.description}</p>
+                )}
+                
+                <div className="flex justify-between items-center text-xs text-gray-500">
+                  <span>Season {price.season}</span>
+                  <span className="bg-green-100 text-green-800 px-2 py-1 rounded-full">
+                    Active
+                  </span>
+                </div>
+              </div>
+            ))}
+          </div>
+        )}
+
+        {getFilteredPrices().length === 0 && !loading && (
+          <div className="text-center py-12">
+            <p className="text-gray-600">No pricing items found for the selected category.</p>
+          </div>
+        )}
+
+        {/* Footer Info */}
+        <div className="bg-green-50 border border-green-200 p-6 rounded-lg">
+          <h3 className="font-semibold text-green-900 mb-2">Payment Information</h3>
+          <div className="text-sm text-green-800 space-y-1">
+            <p>• All fees are payable in EUR (€)</p>
+            <p>• Tournament entry fees are due at registration</p>
+            <p>• Annual membership includes access to all events</p>
+            <p>• Guest players welcome with additional fee</p>
+            <p>• Contact the committee for payment arrangements</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  )
+}

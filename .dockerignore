@@ -1,0 +1,22 @@
+node_modules
+.next
+.git
+*.log
+.env.local
+.DS_Store
+
+# Exclude large backup files
+public/downloads/
+public/files/
+
+# Exclude backup directories
+backups/
+*-backup/
+*-backups/
+
+# Exclude docs (not needed in production)
+docs/
+README*.md
+*SUMMARY*.md
+*FIX*.md
+*INVESTIGATION*.md

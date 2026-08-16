@@ -1,0 +1,837 @@
+<!DOCTYPE html>
+<html xmlns="http://www.w3.org/1999/xhtml">
+<head>
+  <meta charset="utf-8" />
+  <meta name="generator" content="pandoc" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=yes" />
+  <title>FairwayConnect Admin Guide</title>
+  <style>
+    /* Default styles provided by pandoc.
+    ** See https://pandoc.org/MANUAL.html#variables-for-html for config info.
+    */
+    html {
+      color: #1a1a1a;
+      background-color: #fdfdfd;
+    }
+    body {
+      margin: 0 auto;
+      max-width: 36em;
+      padding-left: 50px;
+      padding-right: 50px;
+      padding-top: 50px;
+      padding-bottom: 50px;
+      hyphens: auto;
+      overflow-wrap: break-word;
+      text-rendering: optimizeLegibility;
+      font-kerning: normal;
+    }
+    @media (max-width: 600px) {
+      body {
+        font-size: 0.9em;
+        padding: 12px;
+      }
+      h1 {
+        font-size: 1.8em;
+      }
+    }
+    @media print {
+      html {
+        background-color: white;
+      }
+      body {
+        background-color: transparent;
+        color: black;
+        font-size: 12pt;
+      }
+      p, h2, h3 {
+        orphans: 3;
+        widows: 3;
+      }
+      h2, h3, h4 {
+        page-break-after: avoid;
+      }
+    }
+    p {
+      margin: 1em 0;
+    }
+    a {
+      color: #1a1a1a;
+    }
+    a:visited {
+      color: #1a1a1a;
+    }
+    img {
+      max-width: 100%;
+    }
+    svg {
+      height: auto;
+      max-width: 100%;
+    }
+    h1, h2, h3, h4, h5, h6 {
+      margin-top: 1.4em;
+    }
+    h5, h6 {
+      font-size: 1em;
+      font-style: italic;
+    }
+    h6 {
+      font-weight: normal;
+    }
+    ol, ul {
+      padding-left: 1.7em;
+      margin-top: 1em;
+    }
+    li > ol, li > ul {
+      margin-top: 0;
+    }
+    blockquote {
+      margin: 1em 0 1em 1.7em;
+      padding-left: 1em;
+      border-left: 2px solid #e6e6e6;
+      color: #606060;
+    }
+    code {
+      font-family: Menlo, Monaco, Consolas, 'Lucida Console', monospace;
+      font-size: 85%;
+      margin: 0;
+      hyphens: manual;
+    }
+    pre {
+      margin: 1em 0;
+      overflow: auto;
+    }
+    pre code {
+      padding: 0;
+      overflow: visible;
+      overflow-wrap: normal;
+    }
+    .sourceCode {
+     background-color: transparent;
+     overflow: visible;
+    }
+    hr {
+      border: none;
+      border-top: 1px solid #1a1a1a;
+      height: 1px;
+      margin: 1em 0;
+    }
+    table {
+      margin: 1em 0;
+      border-collapse: collapse;
+      width: 100%;
+      overflow-x: auto;
+      display: block;
+      font-variant-numeric: lining-nums tabular-nums;
+    }
+    table caption {
+      margin-bottom: 0.75em;
+    }
+    tbody {
+      margin-top: 0.5em;
+      border-top: 1px solid #1a1a1a;
+      border-bottom: 1px solid #1a1a1a;
+    }
+    th {
+      border-top: 1px solid #1a1a1a;
+      padding: 0.25em 0.5em 0.25em 0.5em;
+    }
+    td {
+      padding: 0.125em 0.5em 0.25em 0.5em;
+    }
+    header {
+      margin-bottom: 4em;
+      text-align: center;
+    }
+    #TOC li {
+      list-style: none;
+    }
+    #TOC ul {
+      padding-left: 1.3em;
+    }
+    #TOC > ul {
+      padding-left: 0;
+    }
+    #TOC a:not(:hover) {
+      text-decoration: none;
+    }
+    code{white-space: pre-wrap;}
+    span.smallcaps{font-variant: small-caps;}
+    div.columns{display: flex; gap: min(4vw, 1.5em);}
+    div.column{flex: auto; overflow-x: auto;}
+    div.hanging-indent{margin-left: 1.5em; text-indent: -1.5em;}
+    /* The extra [class] is a hack that increases specificity enough to
+       override a similar rule in reveal.js */
+    ul.task-list[class]{list-style: none;}
+    ul.task-list li input[type="checkbox"] {
+      font-size: inherit;
+      width: 0.8em;
+      margin: 0 0.8em 0.2em -1.6em;
+      vertical-align: middle;
+    }
+    .display.math{display: block; text-align: center; margin: 0.5rem auto;}
+  </style>
+<style>@page{margin:2cm}body{font-family:Calibri,sans-serif;font-size:11pt;line-height:1.5}h1{color:#1B5E3A}h2{color:#1B5E3A}h3{color:#2E7D4F}table{border-collapse:collapse;width:100%}td,th{border:1px solid #ccc;padding:6px 8px;font-size:10pt}</style></head>
+<body>
+<header id="title-block-header">
+<h1 class="title">FairwayConnect Admin Guide</h1>
+</header>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th style="text-align: center;"><p><strong>⛳
+FairwayConnect</strong></p>
+<p>Admin Guide</p>
+<p>Version 1.0</p>
+<p>Complete administration guide for managing your golf society</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<p>April 2026</p>
+<h1 id="table-of-contents">Table of Contents</h1>
+<h1 id="getting-started">1. Getting Started</h1>
+<p>This guide covers everything you need to manage your golf society
+through the FairwayConnect admin dashboard. From creating events to
+publishing results, this manual will walk you through each step.</p>
+<h2 id="accessing-the-admin-dashboard">Accessing the Admin
+Dashboard</h2>
+<p>To access the admin area:</p>
+<p>1. Open your browser and go to fairwayconnect.fly.dev/admin</p>
+<p>2. Enter the admin PIN: 2026</p>
+<p>3. You'll be taken to the admin dashboard</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>⚠️ Important</strong></p>
+<p>Keep the admin PIN secure. Only share it with authorised
+administrators. The PIN provides full access to create events, enter
+scores, and publish results.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="admin-dashboard-overview">Admin Dashboard Overview</h2>
+<p>The admin dashboard is your central hub. From here you can:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Feature</strong></th>
+<th><strong>Description</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Create &amp; manage events</strong></td>
+<td>Set up outings with course details, dates, and tee times</td>
+</tr>
+<tr>
+<td><strong>Manage players</strong></td>
+<td>Add players to events, track RSVPs</td>
+</tr>
+<tr>
+<td><strong>Enter scores</strong></td>
+<td>Input hole-by-hole scores during or after an outing</td>
+</tr>
+<tr>
+<td><strong>Publish results</strong></td>
+<td>Finalise events, generate prizes, and update standings</td>
+</tr>
+<tr>
+<td><strong>Manage deductions</strong></td>
+<td>View and edit the deductions sheet</td>
+</tr>
+<tr>
+<td><strong>Update handicaps</strong></td>
+<td>Keep member handicap indexes current</td>
+</tr>
+</tbody>
+</table>
+<h1 id="managing-events">2. Managing Events</h1>
+<p>Events are the core of FairwayConnect. Each outing is set up as an
+event with course details, date, and tee time configuration.</p>
+<h2 id="creating-a-new-event">2.1 Creating a New Event</h2>
+<p>To create a new event:</p>
+<p>1. From the admin dashboard, click 'Create Event' or the '+'
+button</p>
+<p>2. Enter the event details:<br />
+• Event name (e.g., 'Spring Outing - Portmarnock')<br />
+• Date of the outing<br />
+• Course name</p>
+<p>3. Configure the tee settings (see Section 2.2)</p>
+<p>4. Save the event — it will appear on the calendar immediately</p>
+<h2 id="whs-course-settings">2.2 WHS Course Settings</h2>
+<p>For accurate handicap calculations, you need to set up the course
+details according to the World Handicap System (WHS).</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Setting</strong></th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Slope Rating</strong></td>
+<td>The slope rating of the course from the selected tees (e.g.,
+128)</td>
+</tr>
+<tr>
+<td><strong>Course Rating (CR)</strong></td>
+<td>The course rating for the selected tees (e.g., 72.1)</td>
+</tr>
+<tr>
+<td><strong>Par</strong></td>
+<td>The par for the course (e.g., 72)</td>
+</tr>
+<tr>
+<td><strong>Tees</strong></td>
+<td>Select which tees will be played (e.g., White, Yellow, Red)</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+<h2 id="handicap-allowance">2.3 Handicap Allowance</h2>
+<p>FairwayConnect uses a 95% handicap allowance as standard, in line
+with Golf Ireland recommendations for individual Stableford
+competitions.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>📝 Note</strong></p>
+<p>The 95% allowance is applied automatically when calculating playing
+handicaps. You don't need to adjust this manually — the system handles
+it based on each player's handicap index and the course
+settings.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h1 id="players-rsvps">3. Players &amp; RSVPs</h1>
+<h2 id="adding-players-to-events">3.1 Adding Players to Events</h2>
+<p>To add players to an event:</p>
+<p>1. Open the event from the admin dashboard</p>
+<p>2. Go to the Players tab</p>
+<p>3. Click 'Add Player' and select from the member list</p>
+<p>4. The player will be added with a default RSVP status</p>
+<h2 id="managing-rsvps">3.2 Managing RSVPs</h2>
+<p>Each player's RSVP status can be set to one of three states:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Status</strong></th>
+<th>Meaning</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>✅ Confirmed</td>
+<td>Player has confirmed they will attend</td>
+</tr>
+<tr>
+<td>❓ Maybe</td>
+<td>Player hasn't decided yet</td>
+</tr>
+<tr>
+<td>❌ Declined</td>
+<td>Player has declined the invitation</td>
+</tr>
+</tbody>
+</table>
+<p>You can easily see who hasn't responded yet — players without a
+confirmed or declined status will be highlighted.</p>
+<h2 id="tee-time-management">3.3 Tee Time Management</h2>
+<p>To set up tee times:</p>
+<p>1. Go to the Tee Times section of the event</p>
+<p>2. Set the first tee time and interval between groups (e.g., 10
+minutes)</p>
+<p>3. Drag and drop players into groups</p>
+<p>4. Arrange the order within each group as needed</p>
+<p>5. Click 'Recalculate Times' if you change the interval or first tee
+time</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>💡 Tip</strong></p>
+<p>Use the drag-and-drop feature to quickly rearrange players between
+groups. The 'Recalculate Times' button will automatically update all tee
+times based on the interval you've set.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h1 id="entering-scores">4. Entering Scores</h1>
+<p>Score entry is done through the Scorecards tab on each event. Scores
+are entered as gross (actual shots taken) and the system automatically
+calculates Stableford points.</p>
+<h2 id="using-the-scorecards-tab">4.1 Using the Scorecards Tab</h2>
+<p>To enter scores for a player:</p>
+<p>1. Open the event and go to the Scorecards tab</p>
+<p>2. Select the player from the list</p>
+<p>3. Enter the gross score for each hole (1-18)</p>
+<p>4. Stableford points are calculated automatically based on the
+player's playing handicap</p>
+<p>5. The leaderboard updates in real time as scores are saved</p>
+<h2 id="stableford-auto-calculation">4.2 Stableford
+Auto-Calculation</h2>
+<p>The system automatically calculates Stableford points using the
+following formula:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Score vs Par (net)</strong></th>
+<th><strong>Stableford Points</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>2+ under par (Eagle or better)</td>
+<td>4 points</td>
+</tr>
+<tr>
+<td>1 under par (Birdie)</td>
+<td>3 points</td>
+</tr>
+<tr>
+<td>Par</td>
+<td>2 points</td>
+</tr>
+<tr>
+<td>1 over par (Bogey)</td>
+<td>1 point</td>
+</tr>
+<tr>
+<td>2 over par (Double bogey)</td>
+<td>0 points</td>
+</tr>
+<tr>
+<td>3+ over par</td>
+<td>0 points</td>
+</tr>
+<tr>
+<td>No score / Pick up</td>
+<td>0 points</td>
+</tr>
+</tbody>
+</table>
+<h2 id="handicap-deductions-scoring">4.3 Handicap Deductions &amp;
+Scoring</h2>
+<p>The playing handicap is calculated from each player's handicap index
+using the WHS formula with the course's slope rating, course rating, and
+par. The 95% allowance is applied automatically.</p>
+<p>Handicap strokes are distributed across holes based on the stroke
+index. The system handles all of this automatically — you just enter the
+gross scores.</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>⚠️ Important</strong></p>
+<p>Always enter GROSS scores (actual shots taken). Do not subtract
+handicap strokes — the system does this automatically when calculating
+Stableford points.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h1 id="side-competitions">5. Side Competitions</h1>
+<p>Side competitions add extra fun and prizes to each outing.
+FairwayConnect supports several types of side comps.</p>
+<h2 id="types-of-side-competitions">5.1 Types of Side Competitions</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Competition</strong></th>
+<th>Description</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Nearest the Pin (NTP)</strong></td>
+<td>Closest tee shot to the pin on a par 3. Measured from the pin.</td>
+</tr>
+<tr>
+<td><strong>Longest Drive</strong></td>
+<td>Longest drive on a designated hole. Must be on the fairway.</td>
+</tr>
+<tr>
+<td><strong>Twos Club</strong></td>
+<td>Any player who scores a 2 on any hole (gross score).</td>
+</tr>
+</tbody>
+</table>
+<h2 id="adding-side-competition-entries">5.2 Adding Side Competition
+Entries</h2>
+<p>To add a side competition result:</p>
+<p>1. Open the event and go to the Side Competitions section</p>
+<p>2. Select the competition type (NTP, Longest Drive, or Twos)</p>
+<p>3. Select the player and the relevant hole number</p>
+<p>4. Add any additional details (e.g., distance for NTP)</p>
+<p>5. Save the entry</p>
+<h2 id="editing-or-deleting-entries">5.3 Editing or Deleting
+Entries</h2>
+<p>You can edit or delete any side competition entry at any time before
+the event is finalised. Simply click on the entry to edit, or use the
+delete button to remove it.</p>
+<h1 id="publishing-results">6. Publishing Results</h1>
+<p>Publishing results is the final step after all scores have been
+entered. This process generates prizes, applies deductions, and updates
+the GOTY standings.</p>
+<h2 id="recalculate-scores">6.1 Recalculate Scores</h2>
+<p>Before publishing, use the 'Recalculate Scores' button to:</p>
+<ul>
+<li><p>Refresh all Stableford calculations based on current
+handicaps</p></li>
+<li><p>Update rankings to reflect any score corrections</p></li>
+<li><p>Verify that all calculations are correct before
+finalising</p></li>
+</ul>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>⚠️ Important</strong></p>
+<p>Always click 'Recalculate Scores' before finalising, especially if
+you've made any changes to scores or handicaps after initial
+entry.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h2 id="finalise-publish">6.2 Finalise &amp; Publish</h2>
+<p>When you click 'Finalise &amp; Publish', the system performs several
+actions automatically:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Action</strong></th>
+<th>What Happens</th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td><strong>Generate Prizes</strong></td>
+<td>Determines 1st, 2nd, 3rd place winners, plus Front 9 and Back 9
+winners</td>
+</tr>
+<tr>
+<td><strong>Apply Deductions</strong></td>
+<td>Applies each player's deductions to their Stableford score to
+determine final rankings for prizes</td>
+</tr>
+<tr>
+<td><strong>Auto-Write Deductions</strong></td>
+<td>Automatically calculates and writes new deductions for the next
+event based on this event's results</td>
+</tr>
+<tr>
+<td><strong>Update GOTY</strong></td>
+<td>Updates the Golfer of the Year standings with this event's
+Stableford scores</td>
+</tr>
+</tbody>
+</table>
+<h2 id="revert-to-in-progress">6.3 Revert to In Progress</h2>
+<p>If you need to make changes after publishing, you can use 'Revert to
+In Progress'. This will:</p>
+<ul>
+<li><p>Change the event status back to 'In Progress'</p></li>
+<li><p>Remove the generated prizes</p></li>
+<li><p>Reverse the deductions that were auto-written for the next
+event</p></li>
+<li><p>Remove this event's contribution to the GOTY standings</p></li>
+<li><p>Allow you to edit scores, add/remove players, and
+re-publish</p></li>
+</ul>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>📝 Note</strong></p>
+<p>Use 'Revert to In Progress' carefully. It's designed for corrections
+— for example, if you discover a scoring error after publishing. Always
+re-publish after making your changes.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h1 id="deductions-management">7. Deductions Management</h1>
+<p>The deductions system is a society-specific handicapping mechanism
+that ensures consistent winners don't dominate every event.
+Understanding how it works is crucial for accurate results.</p>
+<h2 id="how-deductions-work">7.1 How Deductions Work</h2>
+<p>Each player carries a deductions total that accumulates throughout
+the season. This total is composed of:</p>
+<ul>
+<li><p>Year starting deductions — carried over or reset at the start of
+each season</p></li>
+<li><p>Per-outing adjustments — added or subtracted based on
+results</p></li>
+</ul>
+<h2 id="deduction-values">7.2 Deduction Values</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Result</strong></th>
+<th><strong>Deduction Change</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>1st Place</td>
+<td>-3 (three shots deducted)</td>
+</tr>
+<tr>
+<td>2nd Place</td>
+<td>-2 (two shots deducted)</td>
+</tr>
+<tr>
+<td>3rd Place</td>
+<td>-2 (two shots deducted)</td>
+</tr>
+<tr>
+<td>Front 9 / Back 9 Winner</td>
+<td>-1 (one shot deducted)</td>
+</tr>
+<tr>
+<td>Played but didn't win</td>
+<td>+1 (one shot earned back)</td>
+</tr>
+</tbody>
+</table>
+<h2 id="where-deductions-apply">7.3 Where Deductions Apply</h2>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Competition</strong></th>
+<th><strong>Deductions Applied?</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Overall Prize (1st/2nd/3rd)</td>
+<td>✅ Yes — deductions affect the final ranking</td>
+</tr>
+<tr>
+<td>Front 9 / Back 9 Prizes</td>
+<td>❌ No — these are based on raw Stableford points</td>
+</tr>
+<tr>
+<td>GOTY (Golfer of the Year)</td>
+<td>❌ No — GOTY uses pure Stableford scores</td>
+</tr>
+</tbody>
+</table>
+<h2 id="viewing-and-editing-the-deductions-sheet">7.4 Viewing and
+Editing the Deductions Sheet</h2>
+<p>To view or edit deductions:</p>
+<p>1. Open the event from the admin dashboard</p>
+<p>2. Go to the Deductions tab</p>
+<p>3. You'll see each player's deduction total</p>
+<p>4. To edit: click on a player's deduction value and enter the
+corrected amount</p>
+<p>5. Changes are saved automatically</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>⚠️ Important</strong></p>
+<p>Manual edits to deductions should be rare. The system automatically
+manages deductions when you Finalise &amp; Publish an event. Only edit
+manually if correcting an error.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h1 id="member-management">8. Member Management</h1>
+<p>Member management is handled through the admin handicaps page. This
+is where you keep handicap indexes up to date for all society
+members.</p>
+<h2 id="accessing-member-management">8.1 Accessing Member
+Management</h2>
+<p>To manage members:</p>
+<p>1. Go to fairwayconnect.fly.dev/admin/handicaps</p>
+<p>2. You'll see a list of all registered members with their current
+handicap indexes</p>
+<h2 id="updating-handicap-indexes">8.2 Updating Handicap Indexes</h2>
+<p>To update a player's handicap index:</p>
+<p>1. Find the player in the list</p>
+<p>2. Click on their handicap index value</p>
+<p>3. Enter the new handicap index</p>
+<p>4. Save the change</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>📝 Note</strong></p>
+<p>When you update a player's handicap index, the system automatically
+recalculates their playing handicap for any upcoming events they're
+registered for. This ensures scores are always based on the most current
+handicap.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>⚠️ Important</strong></p>
+<p>Check handicap indexes regularly against the official Golf Ireland
+handicap system to ensure accuracy. Players' indexes can change after
+any qualifying round.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h1 id="printing">9. Printing</h1>
+<p>FairwayConnect provides print-ready formats for key documents you may
+need on the day of an outing.</p>
+<h2 id="print-scorecards">9.1 Print Scorecards</h2>
+<p>To print scorecards for an event:</p>
+<p>1. Open the event from the admin dashboard</p>
+<p>2. Click the 'Print Scorecards' button</p>
+<p>3. The system generates formatted scorecards for all confirmed
+players</p>
+<p>4. Each scorecard includes: player name, playing handicap, hole
+details, and stroke index</p>
+<p>5. Use your browser's print function (Ctrl+P / Cmd+P) to print</p>
+<h2 id="deductions-pdf">9.2 Deductions PDF</h2>
+<p>To generate a printable deductions sheet:</p>
+<p>1. Go to the Deductions section</p>
+<p>2. Click the 'Print' or 'Export PDF' option</p>
+<p>3. The deductions sheet will be formatted for A4 printing</p>
+<p>4. This is useful for displaying at the society event or distributing
+to members</p>
+<table>
+<colgroup>
+<col style="width: 100%" />
+</colgroup>
+<thead>
+<tr>
+<th><p><strong>💡 Tip</strong></p>
+<p>Print scorecards and the deductions sheet before each outing so
+players can see their current deductions on the day.</p></th>
+</tr>
+</thead>
+<tbody>
+</tbody>
+</table>
+<h1 id="quick-reference">Quick Reference</h1>
+<p>Here's a quick reference for the most common admin tasks:</p>
+<table>
+<colgroup>
+<col style="width: 50%" />
+<col style="width: 50%" />
+</colgroup>
+<thead>
+<tr>
+<th><strong>Task</strong></th>
+<th><strong>Where to Go</strong></th>
+</tr>
+</thead>
+<tbody>
+<tr>
+<td>Create event</td>
+<td>Admin Dashboard → Create Event</td>
+</tr>
+<tr>
+<td>Add players</td>
+<td>Event → Players tab → Add Player</td>
+</tr>
+<tr>
+<td>Enter scores</td>
+<td>Event → Scorecards tab → Select player</td>
+</tr>
+<tr>
+<td>Add side comps</td>
+<td>Event → Side Competitions</td>
+</tr>
+<tr>
+<td>Publish results</td>
+<td>Event → Recalculate Scores → Finalise &amp; Publish</td>
+</tr>
+<tr>
+<td>Revert results</td>
+<td>Event → Revert to In Progress</td>
+</tr>
+<tr>
+<td>Update handicaps</td>
+<td>/admin/handicaps</td>
+</tr>
+<tr>
+<td></td>
+<td></td>
+</tr>
+</tbody>
+</table>
+</body>
+</html>

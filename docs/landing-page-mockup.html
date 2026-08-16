@@ -1,0 +1,403 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>FairwayConnect — Aer Lingus Golf Society</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    min-height: 100vh;
+    background: linear-gradient(135deg, #0a3d1f 0%, #1B5E3A 40%, #2E7D4F 100%);
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 20px;
+  }
+
+  /* Subtle pattern overlay */
+  body::before {
+    content: '';
+    position: fixed;
+    top: 0; left: 0; right: 0; bottom: 0;
+    background: url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.03'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E") repeat;
+    pointer-events: none;
+    z-index: 0;
+  }
+
+  .container {
+    position: relative;
+    z-index: 1;
+    width: 100%;
+    max-width: 420px;
+  }
+
+  /* Logo Section */
+  .logo-section {
+    text-align: center;
+    margin-bottom: 32px;
+  }
+
+  .logo-icon {
+    font-size: 56px;
+    display: block;
+    margin-bottom: 8px;
+    filter: drop-shadow(0 4px 12px rgba(0,0,0,0.3));
+  }
+
+  .logo-text {
+    font-size: 32px;
+    font-weight: 800;
+    color: #fff;
+    letter-spacing: -0.5px;
+    text-shadow: 0 2px 8px rgba(0,0,0,0.3);
+  }
+
+  .logo-text span {
+    color: #86EFAC;
+  }
+
+  .society-name {
+    font-size: 15px;
+    color: rgba(255,255,255,0.85);
+    font-weight: 600;
+    margin-top: 6px;
+    letter-spacing: 1.5px;
+    text-transform: uppercase;
+  }
+
+  .society-badge {
+    display: inline-block;
+    margin-top: 12px;
+    padding: 4px 14px;
+    background: rgba(255,255,255,0.1);
+    border: 1px solid rgba(255,255,255,0.2);
+    border-radius: 99px;
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    letter-spacing: 0.5px;
+  }
+
+  /* Login Cards */
+  .cards {
+    display: flex;
+    flex-direction: column;
+    gap: 14px;
+    margin-bottom: 20px;
+  }
+
+  .card {
+    background: rgba(255,255,255,0.95);
+    border-radius: 20px;
+    padding: 24px;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.15), 0 2px 8px rgba(0,0,0,0.1);
+    backdrop-filter: blur(10px);
+    transition: transform 0.2s, box-shadow 0.2s;
+  }
+
+  .card:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 12px 40px rgba(0,0,0,0.2);
+  }
+
+  .card-header {
+    display: flex;
+    align-items: center;
+    gap: 14px;
+    margin-bottom: 16px;
+  }
+
+  .card-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 14px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 24px;
+    flex-shrink: 0;
+  }
+
+  .card-icon.member {
+    background: linear-gradient(135deg, #D1FAE5, #A7F3D0);
+  }
+
+  .card-icon.admin {
+    background: linear-gradient(135deg, #DBEAFE, #BFDBFE);
+  }
+
+  .card-title {
+    font-size: 18px;
+    font-weight: 700;
+    color: #1a1a1a;
+  }
+
+  .card-subtitle {
+    font-size: 12px;
+    color: #6B7280;
+    margin-top: 2px;
+  }
+
+  .pin-input-group {
+    display: flex;
+    gap: 10px;
+    justify-content: center;
+    margin-bottom: 16px;
+  }
+
+  .pin-digit {
+    width: 52px;
+    height: 58px;
+    border: 2px solid #E5E7EB;
+    border-radius: 12px;
+    text-align: center;
+    font-size: 24px;
+    font-weight: 700;
+    color: #1B5E3A;
+    background: #F9FAFB;
+    outline: none;
+    transition: border-color 0.2s, box-shadow 0.2s;
+  }
+
+  .pin-digit:focus {
+    border-color: #1B5E3A;
+    box-shadow: 0 0 0 3px rgba(27, 94, 58, 0.15);
+    background: #fff;
+  }
+
+  .pin-digit.admin:focus {
+    border-color: #2563EB;
+    box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.15);
+  }
+
+  .btn {
+    width: 100%;
+    padding: 14px;
+    border: none;
+    border-radius: 12px;
+    font-size: 15px;
+    font-weight: 700;
+    cursor: pointer;
+    transition: all 0.2s;
+    letter-spacing: 0.3px;
+  }
+
+  .btn-member {
+    background: linear-gradient(135deg, #1B5E3A, #2E7D4F);
+    color: white;
+  }
+
+  .btn-member:hover {
+    background: linear-gradient(135deg, #164D30, #257042);
+    box-shadow: 0 4px 12px rgba(27, 94, 58, 0.4);
+  }
+
+  .btn-admin {
+    background: linear-gradient(135deg, #1E40AF, #2563EB);
+    color: white;
+  }
+
+  .btn-admin:hover {
+    background: linear-gradient(135deg, #1E3A8A, #1D4ED8);
+    box-shadow: 0 4px 12px rgba(37, 99, 235, 0.4);
+  }
+
+  /* Guest access */
+  .guest-link {
+    text-align: center;
+    margin-bottom: 24px;
+  }
+
+  .guest-link a {
+    color: rgba(255,255,255,0.75);
+    text-decoration: none;
+    font-size: 14px;
+    font-weight: 500;
+    padding: 10px 24px;
+    border: 1px solid rgba(255,255,255,0.25);
+    border-radius: 99px;
+    display: inline-block;
+    transition: all 0.2s;
+  }
+
+  .guest-link a:hover {
+    color: #fff;
+    background: rgba(255,255,255,0.1);
+    border-color: rgba(255,255,255,0.4);
+  }
+
+  /* Features strip */
+  .features {
+    display: flex;
+    justify-content: center;
+    gap: 20px;
+    flex-wrap: wrap;
+    margin-bottom: 20px;
+  }
+
+  .feature {
+    text-align: center;
+    color: rgba(255,255,255,0.7);
+    font-size: 11px;
+    font-weight: 500;
+  }
+
+  .feature-icon {
+    font-size: 20px;
+    display: block;
+    margin-bottom: 4px;
+  }
+
+  /* Footer */
+  .footer {
+    text-align: center;
+    color: rgba(255,255,255,0.35);
+    font-size: 11px;
+    margin-top: 8px;
+  }
+
+  .footer a {
+    color: rgba(255,255,255,0.5);
+    text-decoration: none;
+  }
+
+  /* Remember me */
+  .remember {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    margin-top: 10px;
+    font-size: 12px;
+    color: #9CA3AF;
+  }
+
+  .remember input {
+    accent-color: #1B5E3A;
+  }
+
+  /* Divider */
+  .divider {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+    margin: 4px 0;
+    color: rgba(255,255,255,0.4);
+    font-size: 12px;
+  }
+  .divider::before, .divider::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: rgba(255,255,255,0.15);
+  }
+</style>
+</head>
+<body>
+
+<div class="container">
+
+  <!-- Logo -->
+  <div class="logo-section">
+    <span class="logo-icon">⛳</span>
+    <div class="logo-text">Fairway<span>Connect</span></div>
+    <div class="society-name">Aer Lingus Golf Society</div>
+    <div class="society-badge">2026 Season</div>
+  </div>
+
+  <!-- Login Cards -->
+  <div class="cards">
+
+    <!-- Member Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon member">🏌️</div>
+        <div>
+          <div class="card-title">Member</div>
+          <div class="card-subtitle">Enter scores, view results & GOTY</div>
+        </div>
+      </div>
+      <div class="pin-input-group">
+        <input type="tel" maxlength="1" class="pin-digit" placeholder="·">
+        <input type="tel" maxlength="1" class="pin-digit" placeholder="·">
+        <input type="tel" maxlength="1" class="pin-digit" placeholder="·">
+        <input type="tel" maxlength="1" class="pin-digit" placeholder="·">
+      </div>
+      <button class="btn btn-member">Enter as Member →</button>
+      <label class="remember">
+        <input type="checkbox"> Remember me on this device
+      </label>
+    </div>
+
+    <!-- Admin Card -->
+    <div class="card">
+      <div class="card-header">
+        <div class="card-icon admin">⚙️</div>
+        <div>
+          <div class="card-title">Admin</div>
+          <div class="card-subtitle">Manage events, scores & members</div>
+        </div>
+      </div>
+      <div class="pin-input-group">
+        <input type="tel" maxlength="1" class="pin-digit admin" placeholder="·">
+        <input type="tel" maxlength="1" class="pin-digit admin" placeholder="·">
+        <input type="tel" maxlength="1" class="pin-digit admin" placeholder="·">
+        <input type="tel" maxlength="1" class="pin-digit admin" placeholder="·">
+      </div>
+      <button class="btn btn-admin">Enter as Admin →</button>
+    </div>
+
+  </div>
+
+  <!-- Guest Access -->
+  <div class="guest-link">
+    <a href="#">Continue as Guest — View Only</a>
+  </div>
+
+  <!-- Features -->
+  <div class="features">
+    <div class="feature"><span class="feature-icon">🏆</span>Leaderboard</div>
+    <div class="feature"><span class="feature-icon">📅</span>Calendar</div>
+    <div class="feature"><span class="feature-icon">🏆</span>GOTY</div>
+    <div class="feature"><span class="feature-icon">⛳</span>Scoring</div>
+    <div class="feature"><span class="feature-icon">📊</span>Results</div>
+  </div>
+
+  <!-- Footer -->
+  <div class="footer">
+    Powered by <a href="#">FairwayConnect</a> · © 2026
+  </div>
+
+</div>
+
+<script>
+// Auto-advance PIN digits
+document.querySelectorAll('.pin-digit').forEach((input, idx, inputs) => {
+  input.addEventListener('input', (e) => {
+    if (e.target.value.length === 1) {
+      // Find next pin-digit in same card
+      const card = input.closest('.card');
+      const cardInputs = card.querySelectorAll('.pin-digit');
+      const currentIdx = Array.from(cardInputs).indexOf(input);
+      if (currentIdx < cardInputs.length - 1) {
+        cardInputs[currentIdx + 1].focus();
+      }
+    }
+  });
+  input.addEventListener('keydown', (e) => {
+    if (e.key === 'Backspace' && !e.target.value) {
+      const card = input.closest('.card');
+      const cardInputs = card.querySelectorAll('.pin-digit');
+      const currentIdx = Array.from(cardInputs).indexOf(input);
+      if (currentIdx > 0) {
+        cardInputs[currentIdx - 1].focus();
+      }
+    }
+  });
+});
+</script>
+
+</body>
+</html>
