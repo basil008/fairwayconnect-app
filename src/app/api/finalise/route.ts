@@ -242,20 +242,21 @@ export async function POST(request: Request) {
       winnerIds.push(sortedByRaw[0].member_id);
     }
 
-    // 2. Overall 2nd (all players, adjusted points with deductions)
-    if (sorted.length > 1) {
+    // 2. Overall 2nd (all players except 1st place winner, adjusted points with deductions)
+    const sortedExcludingFirst = sorted.filter(s => !winnerIds.includes(s.member_id));
+    if (sortedExcludingFirst.length > 0) {
       let countbackNote = '';
-      if (sorted.length > 2 && sorted[1].adjusted_points === sorted[2].adjusted_points) {
-        const result = countbackCompare(sorted[1].scores, sorted[2].scores);
+      if (sortedExcludingFirst.length > 1 && sortedExcludingFirst[0].adjusted_points === sortedExcludingFirst[1].adjusted_points) {
+        const result = countbackCompare(sortedExcludingFirst[0].scores, sortedExcludingFirst[1].scores);
         countbackNote = result.note;
       }
       await db.execute({
         sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
-        args: [uuidv4(), eventId, sorted[1].member_id, 'overall', 2,
-          `🥈 2nd Overall — ${sorted[1].name} (${sorted[1].adjusted_points} pts)`,
+        args: [uuidv4(), eventId, sortedExcludingFirst[0].member_id, 'overall', 2,
+          `🥈 2nd Overall — ${sortedExcludingFirst[0].name} (${sortedExcludingFirst[0].adjusted_points} pts)`,
           0, countbackNote || null]
       });
-      winnerIds.push(sorted[1].member_id);
+      winnerIds.push(sortedExcludingFirst[0].member_id);
     }
 
     // 3. Class 1 - 1st & 2nd (H/C ≤ class1_max_handicap, excluding overall winners)
