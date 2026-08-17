@@ -172,8 +172,8 @@ export default function MemberHome() {
         name: leader.name,
         total_points: leader.total_points
       } : null);
-      // Get last finalized event results
-      const finalized = calendar?.events?.filter((ev: any) => ev.status === 'finalised');
+      // Get last finalized AND published event results
+      const finalized = calendar?.events?.filter((ev: any) => ev.status === 'finalised' && ev.results_published === 1);
       if (finalized && finalized.length > 0) {
         const lastEvent = finalized[finalized.length - 1];
         const results = await fetch(`/api/events/${lastEvent.id}/results`).then(r => r.json());
