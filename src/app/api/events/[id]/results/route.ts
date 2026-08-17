@@ -317,16 +317,38 @@ export async function GET(
             back6: countback.back6,
           };
         })
-      ).then(cards => cards.sort((a, b) => {
-        // 1. Points (higher is better)
-        if (b.total_points !== a.total_points) return b.total_points - a.total_points;
-        // 2. Back 9 countback (higher is better)
-        if (b.back9 !== a.back9) return b.back9 - a.back9;
-        // 3. Back 6 countback (higher is better)
-        if (b.back6 !== a.back6) return b.back6 - a.back6;
-        // 4. Gross score (lower is better)
-        return a.total_gross - b.total_gross;
-      })),
+      ).then(cards => {
+        // Sort cards
+        const sorted = cards.sort((a, b) => {
+          // 1. Points (higher is better)
+          if (b.total_points !== a.total_points) return b.total_points - a.total_points;
+          // 2. Back 9 countback (higher is better)
+          if (b.back9 !== a.back9) return b.back9 - a.back9;
+          // 3. Back 6 countback (higher is better)
+          if (b.back6 !== a.back6) return b.back6 - a.back6;
+          // 4. Gross score (lower is better)
+          return a.total_gross - b.total_gross;
+        });
+        
+        // Assign positions (handle ties)
+        let currentPosition = 1;
+        return sorted.map((card, index) => {
+          // If not first card, check if tied with previous
+          if (index > 0) {
+            const prev = sorted[index - 1];
+            const tied = (
+              card.total_points === prev.total_points &&
+              card.back9 === prev.back9 &&
+              card.back6 === prev.back6 &&
+              card.total_gross === prev.total_gross
+            );
+            if (!tied) {
+              currentPosition = index + 1;
+            }
+          }
+          return { ...card, position: currentPosition };
+        });
+      }),
       prizes: calculatedPrizes,
       sideComps: sideCompsResult.rows.map(row => ({
         type: row.type,
