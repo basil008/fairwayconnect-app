@@ -12,10 +12,12 @@ interface LeaderboardEntry {
   position: number;
 }
 
-interface NineWinner {
-  name: string;
-  handicap: number;
-  points: number;
+interface Prize {
+  prize_type: string;
+  position: number | null;
+  label: string;
+  value: number;
+  member_name: string;
 }
 
 export default function PublishScoresPage() {
@@ -31,8 +33,7 @@ export default function PublishScoresPage() {
     status: string;
   } | null>(null);
   const [leaderboard, setLeaderboard] = useState<LeaderboardEntry[]>([]);
-  const [front9Winner, setFront9Winner] = useState<NineWinner | null>(null);
-  const [back9Winner, setBack9Winner] = useState<NineWinner | null>(null);
+  const [prizes, setPrizes] = useState<Prize[]>([]);
   const [confirmed, setConfirmed] = useState(false);
 
   useEffect(() => {
@@ -62,12 +63,7 @@ export default function PublishScoresPage() {
         
         setEventData(event);
         setLeaderboard(results.scorecards || []);
-        
-        // Extract Front 9 and Back 9 winners from prizes
-        const front9 = results.prizes?.find((p: any) => p.prize_type === 'front_9');
-        const back9 = results.prizes?.find((p: any) => p.prize_type === 'back_9');
-        setFront9Winner(front9);
-        setBack9Winner(back9);
+        setPrizes(results.prizes || []);
         
         setPublished(event.results_published === 1);
         setLoading(false);
@@ -93,8 +89,7 @@ export default function PublishScoresPage() {
 
   if (checking || !isAuth) return null;
 
-  const top3 = leaderboard.slice(0, 3);
-  const canPublish = eventData?.status === 'finalised' && eventData?.results_published === 0 && leaderboard.length > 0;
+  const canPublish = eventData?.status === 'finalised' && eventData?.results_published === 0 && prizes.length > 0;
 
   return (
     <div>
@@ -159,42 +154,27 @@ export default function PublishScoresPage() {
               <p className="text-xs text-gray-400 mt-1">{leaderboard.length} scorecards submitted</p>
             </div>
 
-            {/* Prize Preview */}
+            {/* Prize Preview - Shows ALL prizes exactly as in Admin/Event/Results */}
             <div className="bg-white rounded-2xl shadow-sm overflow-hidden mb-6">
               <div className="bg-gradient-to-r from-yellow-50 to-amber-50 px-4 py-3 border-b border-yellow-100">
                 <p className="text-sm font-bold text-yellow-800">🏆 Results Preview</p>
               </div>
-              <div className="divide-y divide-gray-100">
-                {/* Top 3 */}
-                {top3.map((entry, idx) => (
-                  <div key={idx} className="flex items-center px-4 py-3 bg-yellow-50/30">
-                    <span className="w-16 text-sm font-bold text-gray-600">
-                      {entry.position === 1 ? '🥇 1st' : entry.position === 2 ? '🥈 2nd' : '🥉 3rd'}
-                    </span>
-                    <span className="flex-1 font-semibold text-gray-900">{entry.name}</span>
-                    <span className="text-xs text-gray-400 mx-2">({entry.handicap})</span>
-                    <span className="font-bold text-fairway-900">{entry.total_points} pts</span>
-                  </div>
-                ))}
-                {/* Front 9 */}
-                {front9Winner && (
-                  <div className="flex items-center px-4 py-3">
-                    <span className="w-16 text-sm font-bold text-gray-600">Front 9</span>
-                    <span className="flex-1 font-medium text-gray-800">{front9Winner.name}</span>
-                    <span className="text-xs text-gray-400 mx-2">({front9Winner.handicap})</span>
-                    <span className="font-semibold text-gray-700">{front9Winner.points} pts</span>
-                  </div>
-                )}
-                {/* Back 9 */}
-                {back9Winner && (
-                  <div className="flex items-center px-4 py-3">
-                    <span className="w-16 text-sm font-bold text-gray-600">Back 9</span>
-                    <span className="flex-1 font-medium text-gray-800">{back9Winner.name}</span>
-                    <span className="text-xs text-gray-400 mx-2">({back9Winner.handicap})</span>
-                    <span className="font-semibold text-gray-700">{back9Winner.points} pts</span>
-                  </div>
-                )}
-              </div>
+              {prizes.length > 0 ? (
+                <div className="divide-y divide-gray-100">
+                  {prizes.map((prize, idx) => (
+                    <div key={idx} className="flex justify-between items-center px-4 py-3">
+                      <span className="text-sm font-medium text-gray-900">{prize.label}</span>
+                      {prize.value > 0 && (
+                        <span className="text-sm text-fairway-800 font-bold">€{prize.value}</span>
+                      )}
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div className="p-8 text-center text-gray-400">
+                  No prizes calculated yet. Please finalize the event first.
+                </div>
+              )}
             </div>
 
             {/* Full Leaderboard */}
