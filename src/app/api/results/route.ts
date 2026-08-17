@@ -17,6 +17,12 @@ export async function GET() {
         results: [], 
         event: null, 
         finalised: false 
+      }, {
+        headers: {
+          'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+          'Pragma': 'no-cache',
+          'Expires': '0'
+        }
       });
     }
 
@@ -78,6 +84,12 @@ export async function GET() {
         name: event.name || 'Tournament Results'
       },
       finalised: true,
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
   } catch (error) {

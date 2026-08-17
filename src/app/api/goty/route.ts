@@ -158,6 +158,12 @@ export async function GET(request: Request) {
         events_completed: eventsCompleted,
         best_6_of_8: seasonInfo.best_of_x === 6 && totalEvents === 8
       }
+    }, {
+      headers: {
+        'Cache-Control': 'no-store, no-cache, must-revalidate, max-age=0',
+        'Pragma': 'no-cache',
+        'Expires': '0'
+      }
     });
 
   } catch (error) {
