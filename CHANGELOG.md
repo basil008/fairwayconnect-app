@@ -5,6 +5,22 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.1] - 2026-08-17
+
+### Fixed
+- **Admin/Publish page ranking bug** - Fixed missing position field assignment in results API
+- Top 3 prizes now correctly display 🥇 1st, 🥈 2nd, 🥉 3rd medals (previously all showed 🥉 3rd)
+- Position calculation properly handles countback tiebreakers (Back 9 → Back 6 → Gross)
+- Tied players now receive the same position number when scores and countback are identical
+
+### Technical Details
+- Modified `/api/events/[id]/results` route to assign position numbers after sorting
+- Positions respect ALGS countback rules: Points → Back 9 → Back 6 → Gross score
+- No database changes required
+- Tested on fairwayconnect-test before production deploy
+
+---
+
 ## [1.0.0] - 2026-08-17
 
 ### Release Milestone
