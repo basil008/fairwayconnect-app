@@ -292,8 +292,8 @@ export async function POST(request: Request) {
       winnerIds.push(class1Players[1].member_id);
     }
 
-    // 4. Class 2 - 1st & 2nd (H/C ≥ class2_min_handicap, excluding overall winners)
-    const class2Players = sorted.filter(s => s.handicap >= class2MinHcp && !winnerIds.includes(s.member_id));
+    // 4. Class 2 - 1st & 2nd (H/C > class2_min_handicap, excluding overall winners)
+    const class2Players = sorted.filter(s => s.handicap > class2MinHcp && !winnerIds.includes(s.member_id));
     
     if (class2Players.length > 0) {
       let countbackNote = '';
@@ -304,7 +304,7 @@ export async function POST(request: Request) {
       await db.execute({
         sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         args: [uuidv4(), eventId, class2Players[0].member_id, 'class_2', 1,
-          `🏅 Class 2 - 1st (H/C ≥${class2MinHcp}) — ${class2Players[0].name} (${class2Players[0].adjusted_points} pts)`,
+          `🏅 Class 2 - 1st (H/C >${class2MinHcp}) — ${class2Players[0].name} (${class2Players[0].adjusted_points} pts)`,
           0, countbackNote || null]
       });
       winnerIds.push(class2Players[0].member_id);
@@ -319,7 +319,7 @@ export async function POST(request: Request) {
       await db.execute({
         sql: 'INSERT INTO prize_allocations (id, event_id, member_id, prize_type, position, label, value, countback_note) VALUES (?, ?, ?, ?, ?, ?, ?, ?)',
         args: [uuidv4(), eventId, class2Players[1].member_id, 'class_2', 2,
-          `🏅 Class 2 - 2nd (H/C ≥${class2MinHcp}) — ${class2Players[1].name} (${class2Players[1].adjusted_points} pts)`,
+          `🏅 Class 2 - 2nd (H/C >${class2MinHcp}) — ${class2Players[1].name} (${class2Players[1].adjusted_points} pts)`,
           0, countbackNote || null]
       });
       winnerIds.push(class2Players[1].member_id);
