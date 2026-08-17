@@ -27,6 +27,7 @@ export async function GET(request: Request) {
         JOIN members m ON s.member_id = m.id
         JOIN events e ON s.event_id = e.id
         WHERE e.status = 'finalised' 
+          AND e.results_published = 1
           AND strftime('%Y', e.date) = ?
           AND m.status = 'active'
           AND (m.member_type IS NULL OR m.member_type != 'visitor')
