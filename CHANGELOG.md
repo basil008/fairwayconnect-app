@@ -5,6 +5,43 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.0] - 2026-08-17
+
+### Release Milestone
+First production release under full version control.
+
+### Quality Gates Passed
+- ✅ Rule 1: Git version control established
+- ✅ Rule 2: Single source of truth (~/fairwayconnect)
+- ✅ Rule 3: CHANGELOG.md maintained
+- ✅ Rule 4: Manual testing verified (TEST walkthrough passed)
+- ✅ Rule 5: Pre-deploy backup created (fwc-live-turso-2026081707131.sql, 1.1MB, 6750 lines)
+- ✅ Rule 6: Fly.toml configured for production (fairwayconnect-live)
+- ✅ Rule 7: Database backup verified (8 events confirmed)
+- ✅ Rule 8: Footer displays version number
+
+### Production Configuration
+- **Database:** libsql://fairwayconnect-live-oscsar.aws-eu-west-1.turso.io
+- **Deployment:** fairwayconnect-live (Fly.io Amsterdam)
+- **URL:** https://fairwayconnect.fly.dev
+
+### Features Verified
+- WHS handicap calculation (Slope/CR/Par/95% allowance)
+- 27-hole course support (Malahide, Corrstown)
+- Tee time management with drag-drop assignment
+- Scorecard entry with live Stableford calculation
+- ALGS deduction system (-3/-2/-1/+1 cumulative)
+- Payment tracking and prize pool calculation
+- Calendar with past results viewing
+- 8 Dublin-area courses configured
+
+### Known Limitations
+- Events 5-8 (Jul-Sep) have incomplete course_id setup in production data
+- Class 1/Class 2 prize configuration UI incomplete
+- Prize configurator missing for Captain's/President's Prize events
+
+---
+
 ## [1.0.0-baseline] - 2026-08-16
 
 ### Established

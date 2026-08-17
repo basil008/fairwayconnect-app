@@ -1,6 +1,7 @@
 'use client';
 
 import BottomNav from '@/components/BottomNav';
+import Footer from '@/components/Footer';
 import { MemberProvider } from '@/lib/MemberContext';
 
 export default function MemberLayout({ children }: { children: React.ReactNode }) {
@@ -10,6 +11,7 @@ export default function MemberLayout({ children }: { children: React.ReactNode }
         <main className="max-w-lg mx-auto min-h-screen">
           {children}
         </main>
+        <Footer />
         <BottomNav />
       </div>
     </MemberProvider>

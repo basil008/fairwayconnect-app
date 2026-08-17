@@ -1,4 +1,4 @@
-app = 'fairwayconnect'
+app = 'fairwayconnect-live'
 primary_region = 'ams'
 
 [build]
