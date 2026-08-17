@@ -92,22 +92,38 @@ export default function AdminDashboard() {
                 {/* Publish Scores */}
                 <Link href="/admin/publish"
                   className={`rounded-2xl p-6 shadow-lg transition-colors ${
-                    evt.status === 'in_progress' 
-                      ? 'bg-amber-500 text-white hover:bg-amber-600' 
-                      : evt.status === 'finalised'
+                    evt.results_published === 1
                       ? 'bg-green-600 text-white hover:bg-green-700'
+                      : evt.status === 'finalised'
+                      ? 'bg-amber-500 text-white hover:bg-amber-600'
+                      : evt.status === 'in_progress'
+                      ? 'bg-amber-500 text-white hover:bg-amber-600'
                       : 'bg-gray-200 text-gray-500'
                   }`}>
                   <div className="text-4xl mb-3">📢</div>
                   <h2 className="text-xl font-bold mb-1">Publish Scores</h2>
-                  <p className={`text-sm mb-3 ${evt.status === 'finalised' ? 'text-green-100' : evt.status === 'in_progress' ? 'text-amber-100' : 'text-gray-400'}`}>
-                    {evt.status === 'finalised' ? 'Results published ✓' : evt.status === 'in_progress' ? 'Review & release results' : 'Available after event'}
+                  <p className={`text-sm mb-3 ${
+                    evt.results_published === 1 ? 'text-green-100' 
+                    : evt.status === 'finalised' ? 'text-amber-100'
+                    : evt.status === 'in_progress' ? 'text-amber-100' 
+                    : 'text-gray-400'
+                  }`}>
+                    {evt.results_published === 1 ? 'Results published ✓' 
+                    : evt.status === 'finalised' ? '⚠️ Ready to publish' 
+                    : evt.status === 'in_progress' ? 'Review & release results' 
+                    : 'Available after event'}
                   </p>
                   <div className={`rounded-xl px-3 py-2 inline-block ${
-                    evt.status === 'in_progress' ? 'bg-white/20' : evt.status === 'finalised' ? 'bg-white/20' : 'bg-gray-300'
+                    evt.results_published === 1 ? 'bg-white/20'
+                    : evt.status === 'finalised' ? 'bg-white/20'
+                    : evt.status === 'in_progress' ? 'bg-white/20' 
+                    : 'bg-gray-300'
                   }`}>
                     <p className="text-xs font-medium">
-                      {evt.status === 'in_progress' ? '🟡 Scores being entered' : evt.status === 'finalised' ? '✅ Published' : '⏳ Event not started'}
+                      {evt.results_published === 1 ? '✅ Published' 
+                      : evt.status === 'finalised' ? '⚠️ Awaiting publish' 
+                      : evt.status === 'in_progress' ? '🟡 Scores being entered' 
+                      : '⏳ Event not started'}
                     </p>
                   </div>
                 </Link>
