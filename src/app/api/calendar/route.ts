@@ -18,7 +18,8 @@ export async function GET() {
         status,
         entry_fee,
         first_tee,
-        event_number
+        event_number,
+        results_published
       FROM events 
       ORDER BY event_number ASC
     `);
@@ -31,7 +32,8 @@ export async function GET() {
       status: row.status,
       entry_fee: row.entry_fee,
       first_tee: row.first_tee,
-      event_number: row.event_number
+      event_number: row.event_number,
+      results_published: row.results_published
     }));
 
     // Get season info from database

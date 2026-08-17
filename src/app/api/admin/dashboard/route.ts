@@ -42,12 +42,23 @@ export async function GET() {
     // Get current/next event (simplified)
     let currentEvent = null;
     try {
-      const upcomingEventResult = await db.execute(`
-        SELECT * FROM events WHERE status = 'upcoming' OR status = 'in_progress'
-        ORDER BY date ASC LIMIT 1
+      // First priority: finalized but not published (awaiting publish)
+      const awaitingPublishResult = await db.execute(`
+        SELECT * FROM events WHERE status = 'finalised' AND (results_published = 0 OR results_published IS NULL)
+        ORDER BY date DESC LIMIT 1
       `);
-      currentEvent = upcomingEventResult.rows[0] as Record<string, unknown> | null;
+      currentEvent = awaitingPublishResult.rows[0] as Record<string, unknown> | null;
       
+      // Second priority: upcoming or in-progress events
+      if (!currentEvent) {
+        const upcomingEventResult = await db.execute(`
+          SELECT * FROM events WHERE status = 'upcoming' OR status = 'in_progress'
+          ORDER BY date ASC LIMIT 1
+        `);
+        currentEvent = upcomingEventResult.rows[0] as Record<string, unknown> | null;
+      }
+      
+      // Fallback: last event
       if (!currentEvent) {
         const lastEventResult = await db.execute('SELECT * FROM events ORDER BY date DESC LIMIT 1');
         currentEvent = lastEventResult.rows[0] as Record<string, unknown> | null;
