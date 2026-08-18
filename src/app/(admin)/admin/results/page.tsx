@@ -35,11 +35,38 @@ export default function AdminResultsPage() {
     loadData();
   };
 
-  const shareWhatsApp = () => {
-    let text = `🏆 ${eventName} Results\n\n`;
-    prizes.forEach(p => { text += `${p.label}\n`; });
-    text += '\n⛳ FairwayConnect';
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+  const shareWhatsApp = async () => {
+    try {
+      // Fetch fresh data with proper event details
+      const response = await fetch(`/api/events/${eventId}/results`);
+      const data = await response.json();
+      
+      // Build message using fetched data
+      let text = `🏆 Aer Lingus Golf Society Results\n`;
+      
+      if (data.event?.course_name) {
+        text += `📍 ${data.event.course_name}\n`;
+      }
+      
+      if (data.event?.date) {
+        const dateObj = new Date(data.event.date + 'T12:00:00');
+        text += `📅 ${dateObj.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n`;
+      }
+      
+      text += '\n';
+      
+      // Use pre-formatted labels from API (they already have emojis)
+      if (data.prizes) {
+        data.prizes.forEach((p: any) => {
+          text += `${p.label}\n`;
+        });
+      }
+      
+      text += '\n⛳ FairwayConnect';
+      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
+    } catch (error: any) {
+      console.error('WhatsApp share error:', error);
+    }
   };
 
   if (checking || !isAuth) return null;
