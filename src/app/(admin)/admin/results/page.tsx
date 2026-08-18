@@ -37,9 +37,19 @@ export default function AdminResultsPage() {
 
   const shareWhatsApp = async () => {
     try {
+      if (!eventId) {
+        alert('No event selected. Please refresh the page.');
+        return;
+      }
+
       // Fetch fresh data with proper event details
       const response = await fetch(`/api/events/${eventId}/results`);
+      if (!response.ok) {
+        throw new Error(`API returned ${response.status}`);
+      }
+      
       const data = await response.json();
+      console.log('WhatsApp data:', data);
       
       // Build message using fetched data
       let text = `🏆 Aer Lingus Golf Society Results\n`;
@@ -56,16 +66,20 @@ export default function AdminResultsPage() {
       text += '\n';
       
       // Use pre-formatted labels from API (they already have emojis)
-      if (data.prizes) {
+      if (data.prizes && data.prizes.length > 0) {
         data.prizes.forEach((p: any) => {
           text += `${p.label}\n`;
         });
+      } else {
+        text += 'No prizes available\n';
       }
       
       text += '\n⛳ FairwayConnect';
+      console.log('WhatsApp text:', text);
       window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
     } catch (error: any) {
       console.error('WhatsApp share error:', error);
+      alert(`WhatsApp share failed: ${error.message}`);
     }
   };
 
