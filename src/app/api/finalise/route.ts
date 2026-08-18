@@ -448,33 +448,50 @@ export async function POST(request: Request) {
     let reason = '';
 
     if (eventType === 'captains' || eventType === 'presidents') {
-      // CAPTAIN'S/PRESIDENT'S PRIZE: NO DEDUCTIONS APPLIED
-      // Winners are exempt from handicap deductions per ALGS rules
-      deduction = 0;
-      reason = '';
+      // CAPTAIN'S PRIZE DEDUCTIONS (fixed values, not from settings)
+      // President's Prize uses same logic as Captain's Prize
+      if (prizeType === 'overall') {
+        if (position === 1) {
+          deduction = 3;
+          reason = 'Captain\'s Prize Winner';
+        } else if (position === 2) {
+          deduction = 2;
+          reason = 'Captain\'s Prize 2nd Overall';
+        } else if (position === 3) {
+          deduction = 2;
+          reason = 'Captain\'s Prize 3rd Overall';
+        }
+      } else if (prizeType === 'third_overall') {
+        deduction = 2;
+        reason = 'Captain\'s Prize 3rd Overall';
+      } else if (prizeType === 'class_1' || prizeType === 'class_2') {
+        if (position === 1 || position === 2) {
+          deduction = 2;
+          const className = prizeType === 'class_1' ? 'Class 1' : 'Class 2';
+          reason = `Captain\'s Prize ${className} ${position === 1 ? '1st' : '2nd'}`;
+        }
+      }
+      // Captain's Prize does NOT have Front 9 / Back 9 prizes or deductions
     } else {
       // STANDARD EVENT DEDUCTIONS (from society settings)
-      // OVERALL prizes: -3 for 1st, -2 for 2nd/3rd
-      if (prizeType === 'overall') {
+      if (prizeType === 'overall' || prizeType === 'class_1' || prizeType === 'class_2') {
         if (position === 1) {
           deduction = deductions.deduction_1st;
           reason = '1st Place';
         } else if (position === 2) {
           deduction = deductions.deduction_2nd;
           reason = '2nd Place';
+        } else if (position === 3) {
+          deduction = deductions.deduction_3rd;
+          reason = '3rd Place';
         }
       }
-      // THIRD OVERALL: Always -2 (3rd place)
+      // THIRD OVERALL for standard events
       else if (prizeType === 'third_overall') {
         deduction = deductions.deduction_3rd;
         reason = '3rd Place';
       }
-      // CLASS prizes: -1 for winners (same as Front9/Back9)
-      else if (prizeType === 'class_1' || prizeType === 'class_2') {
-        deduction = deductions.deduction_front9; // -1
-        reason = prizeType === 'class_1' ? 'Class 1 Winner' : 'Class 2 Winner';
-      }
-      // Front 9 / Back 9: -1
+      // Front 9 / Back 9 (Standard events only)
       else if (prizeType === 'front_9' || prizeType === 'class_1_front_9' || prizeType === 'class_2_front_9') {
         deduction = deductions.deduction_front9;
         reason = 'Front 9 Winner';
