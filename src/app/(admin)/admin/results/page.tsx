@@ -13,6 +13,8 @@ export default function AdminResultsPage() {
   const [eventName, setEventName] = useState('');
   const [eventId, setEventId] = useState('');
   const [eventStatus, setEventStatus] = useState('');
+  const [courseName, setCourseName] = useState('');
+  const [eventDate, setEventDate] = useState('');
   const [loading, setLoading] = useState(true);
 
   const loadData = () => {
@@ -22,6 +24,8 @@ export default function AdminResultsPage() {
         setEventName(data.event.name);
         setEventId(data.event.id);
         setEventStatus(data.event.status);
+        setCourseName(data.event.course_name || '');
+        setEventDate(data.event.date || '');
       }
       setLoading(false);
     }).catch(() => setLoading(false));
@@ -35,52 +39,20 @@ export default function AdminResultsPage() {
     loadData();
   };
 
-  const shareWhatsApp = async () => {
-    try {
-      if (!eventId) {
-        alert('No event selected. Please refresh the page.');
-        return;
-      }
-
-      // Fetch fresh data with proper event details
-      const response = await fetch(`/api/events/${eventId}/results`);
-      if (!response.ok) {
-        throw new Error(`API returned ${response.status}`);
-      }
-      
-      const data = await response.json();
-      console.log('WhatsApp data:', data);
-      
-      // Build message using fetched data
-      let text = `🏆 Aer Lingus Golf Society Results\n`;
-      
-      if (data.event?.course_name) {
-        text += `📍 ${data.event.course_name}\n`;
-      }
-      
-      if (data.event?.date) {
-        const dateObj = new Date(data.event.date + 'T12:00:00');
-        text += `📅 ${dateObj.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n`;
-      }
-      
-      text += '\n';
-      
-      // Use pre-formatted labels from API (they already have emojis)
-      if (data.prizes && data.prizes.length > 0) {
-        data.prizes.forEach((p: any) => {
-          text += `${p.label}\n`;
-        });
-      } else {
-        text += 'No prizes available\n';
-      }
-      
-      text += '\n⛳ FairwayConnect';
-      console.log('WhatsApp text:', text);
-      window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-    } catch (error: any) {
-      console.error('WhatsApp share error:', error);
-      alert(`WhatsApp share failed: ${error.message}`);
+  const shareWhatsApp = () => {
+    // Use local state data (same as member results page)
+    let text = `🏆 ${eventName} Results\n`;
+    if (courseName) {
+      text += `📍 ${courseName}\n`;
     }
+    if (eventDate) {
+      const dateObj = new Date(eventDate + 'T12:00:00');
+      text += `📅 ${dateObj.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n`;
+    }
+    text += '\n';
+    prizes.forEach(p => { text += `${p.label}\n`; });
+    text += '\n⛳ FairwayConnect';
+    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
   if (checking || !isAuth) return null;
