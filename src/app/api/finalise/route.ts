@@ -454,19 +454,27 @@ export async function POST(request: Request) {
       reason = '';
     } else {
       // STANDARD EVENT DEDUCTIONS (from society settings)
-      if (prizeType === 'overall' || prizeType === 'class_1' || prizeType === 'class_2') {
+      // OVERALL prizes: -3 for 1st, -2 for 2nd/3rd
+      if (prizeType === 'overall') {
         if (position === 1) {
           deduction = deductions.deduction_1st;
           reason = '1st Place';
         } else if (position === 2) {
           deduction = deductions.deduction_2nd;
           reason = '2nd Place';
-        } else if (position === 3) {
-          deduction = deductions.deduction_3rd;
-          reason = '3rd Place';
         }
       }
-      // Front 9 / Back 9 (Standard events only)
+      // THIRD OVERALL: Always -2 (3rd place)
+      else if (prizeType === 'third_overall') {
+        deduction = deductions.deduction_3rd;
+        reason = '3rd Place';
+      }
+      // CLASS prizes: -1 for winners (same as Front9/Back9)
+      else if (prizeType === 'class_1' || prizeType === 'class_2') {
+        deduction = deductions.deduction_front9; // -1
+        reason = prizeType === 'class_1' ? 'Class 1 Winner' : 'Class 2 Winner';
+      }
+      // Front 9 / Back 9: -1
       else if (prizeType === 'front_9' || prizeType === 'class_1_front_9' || prizeType === 'class_2_front_9') {
         deduction = deductions.deduction_front9;
         reason = 'Front 9 Winner';
