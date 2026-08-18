@@ -3241,8 +3241,8 @@ export default function AdminEventPage({
                             </div>
                           </div>
 
-                          {/* Captain's Prize Class Winners - Only show if event_type is 'captain' */}
-                          {editForm.event_type === "captains" && (
+                          {/* Captain's/President's Prize Class Winners - Show for both captains and presidents */}
+                          {(editForm.event_type === "captains" || editForm.event_type === "presidents") && (
                             <>
                               <div className="border-t border-gray-200 pt-3 mt-3">
                                 <h6 className="text-xs font-semibold text-gray-600 uppercase mb-2">
