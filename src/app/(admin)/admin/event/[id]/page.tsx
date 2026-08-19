@@ -4538,7 +4538,8 @@ export default function AdminEventPage({
                             text += `📅 ${dateObj.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n`;
                           }
                           text += '\n';
-                          data.prizes.forEach((p) => {
+                          // Use results?.prizes (from /api/events/[id]/results) not data.prizes
+                          (results?.prizes || []).forEach((p: any) => {
                             text += `${p.label}\n`;
                           });
                           text += "\n⛳ FairwayConnect";
