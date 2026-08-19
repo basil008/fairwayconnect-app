@@ -40,22 +40,21 @@ export default function AdminResultsPage() {
   };
 
   const shareWhatsApp = () => {
-    alert(`DEBUG:
-eventName: "${eventName}"
-courseName: "${courseName}"
-eventDate: "${eventDate}"
-prizes: ${prizes.length}`);
+    // DEBUG: Check if data exists
+    if (!courseName || !eventDate || prizes.length === 0) {
+      const missing = [];
+      if (!courseName) missing.push('course name');
+      if (!eventDate) missing.push('event date');
+      if (prizes.length === 0) missing.push('prizes');
+      alert(`ERROR: Missing data - ${missing.join(', ')}\n\neventName: "${eventName}"\ncourseName: "${courseName}"\neventDate: "${eventDate}"\nprizes: ${prizes.length}`);
+      return; // Don't open WhatsApp
+    }
     
     // Use local state data (same as member results page)
     let text = `🏆 ${eventName} Results\n`;
-    if (courseName) {
-      text += `📍 ${courseName}\n`;
-    }
-    if (eventDate) {
-      const dateObj = new Date(eventDate + 'T12:00:00');
-      text += `📅 ${dateObj.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n`;
-    }
-    text += '\n';
+    text += `📍 ${courseName}\n`;
+    const dateObj = new Date(eventDate + 'T12:00:00');
+    text += `📅 ${dateObj.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n`;
     prizes.forEach(p => { text += `${p.label}\n`; });
     text += '\n⛳ FairwayConnect';
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
