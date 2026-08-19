@@ -4529,7 +4529,15 @@ export default function AdminEventPage({
                     evt?.results_published === 1 && (
                       <button
                         onClick={() => {
-                          let text = `🏆 ${evt?.name} Results\n\n`;
+                          let text = `🏆 ${evt?.name} Results\n`;
+                          if (evt?.course_name) {
+                            text += `📍 ${evt.course_name}\n`;
+                          }
+                          if (evt?.date) {
+                            const dateObj = new Date(evt.date + 'T12:00:00');
+                            text += `📅 ${dateObj.toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n`;
+                          }
+                          text += '\n';
                           data.prizes.forEach((p) => {
                             text += `${p.label}\n`;
                           });
