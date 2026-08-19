@@ -27,12 +27,7 @@ export default function ResultsPage() {
     }).catch(() => setLoading(false));
   }, []);
 
-  const shareWhatsApp = () => {
-    let text = `🏆 ${eventName} Results\n📍 ${courseName}\n📅 ${new Date(eventDate + 'T12:00:00').toLocaleDateString('en-IE', { day: 'numeric', month: 'long', year: 'numeric' })}\n\n`;
-    prizes.forEach(p => { text += `${p.label}\n`; });
-    text += '\n⛳ FairwayConnect';
-    window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
-  };
+  // WhatsApp sharing removed - admin-only feature
 
   if (loading) {
     return (
@@ -77,12 +72,7 @@ export default function ResultsPage() {
         ))}
       </div>
 
-      <button onClick={shareWhatsApp}
-        className="w-full bg-green-600 text-white rounded-2xl py-3 font-bold text-sm mt-4">
-        📱 Share via WhatsApp
-      </button>
-
-      <Link href="/calendar" className="block w-full text-center bg-white border border-gray-200 text-gray-700 rounded-2xl py-3 font-bold text-sm mt-3">
+      <Link href="/calendar" className="block w-full text-center bg-white border border-gray-200 text-gray-700 rounded-2xl py-3 font-bold text-sm mt-4">
         📅 View Calendar
       </Link>
     </div>
