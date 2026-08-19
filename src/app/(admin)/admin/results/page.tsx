@@ -40,7 +40,11 @@ export default function AdminResultsPage() {
   };
 
   const shareWhatsApp = () => {
-    console.log('📱 WhatsApp click - State:', { eventName, courseName, eventDate, prizesCount: prizes.length });
+    alert(`DEBUG:
+eventName: "${eventName}"
+courseName: "${courseName}"
+eventDate: "${eventDate}"
+prizes: ${prizes.length}`);
     
     // Use local state data (same as member results page)
     let text = `🏆 ${eventName} Results\n`;
@@ -54,8 +58,6 @@ export default function AdminResultsPage() {
     text += '\n';
     prizes.forEach(p => { text += `${p.label}\n`; });
     text += '\n⛳ FairwayConnect';
-    
-    console.log('📱 WhatsApp text:', text);
     window.open(`https://wa.me/?text=${encodeURIComponent(text)}`, '_blank');
   };
 
