@@ -68,9 +68,9 @@ export default function AdminResultsPage() {
       <AdminNav current="/admin/results" />
 
       <div className="max-w-4xl mx-auto px-4 py-6">
-        <h2 className="text-lg font-bold text-gray-900 mb-1">{eventName || 'No event selected'}</h2>
+        <h2 className="text-lg font-bold text-gray-900 mb-1">{eventName || 'No event selected'} <span className="text-xs text-red-600">[v2026-08-19-08:55]</span></h2>
         <p className="text-sm text-gray-500 mb-4">
-          Status: <span className="font-bold uppercase">{eventStatus || 'N/A'}</span>
+          Status: <span className="font-bold uppercase">{eventStatus || 'N/A'}</span> | Course: {courseName || 'N/A'} | Date: {eventDate || 'N/A'} | Prizes: {prizes.length}
         </p>
 
         {loading ? (
