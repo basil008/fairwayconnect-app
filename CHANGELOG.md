@@ -5,6 +5,48 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.3] - 2026-08-19
+
+### Fixed
+- **WhatsApp share functionality** - Admin WhatsApp share now includes course name, date, and all prize winners
+- Changed data source from `data.prizes` (empty) to `results.prizes` (full prize list)
+- Added proper formatting: event name, course location (📍), date (📅), complete prize list
+
+### Security
+- **REMOVED** WhatsApp share button from member-facing results page (admin-only feature)
+- Members can no longer share results via WhatsApp
+
+### Technical Details
+- Modified `/admin/event/[id]/page.tsx` to use `results?.prizes` from `/api/events/[id]/results`
+- Removed WhatsApp function from `/results/page.tsx` (member page)
+- Deployed to LIVE: 19 Aug 2026 09:55 GMT
+- Commit: `cae950b`
+
+---
+
+## [1.0.2] - 2026-08-17
+
+### Fixed
+- **Handicap deduction restoration** - Reverted unauthorized Aug 16 change that removed Captain's/President's prize deductions
+- Restored working logic from July 28: Captain's/President's apply -3/-2/-2 for overall, -2 for classes
+- Standard events: -3/-2/-2 for overall/classes, -1 for Front9/Back9
+- **President's Prize configuration** - Now shows Class 1/2 prize fields (identical to Captain's Prize)
+
+### Added
+- **Two-step publish workflow** - Finalize creates admin preview, separate Publish step makes results visible to members
+- Calendar API now returns `results_published` flag
+- Dashboard prioritizes unpublished finalized events for publish reminders
+- Member homepage respects `results_published` flag (no leaking unpublished results)
+
+### Technical Details
+- Modified `/api/finalise/route.ts` - Restored handicap deduction logic from July 28
+- Modified `/admin/event/[id]/page.tsx` - President's Prize now shows Class 1/2 fields
+- Added `results_published` checks across member-facing APIs
+- Deployed to LIVE: 17 Aug 2026 23:59 GMT
+- Commit: `082efb1`
+
+---
+
 ## [1.0.1] - 2026-08-17
 
 ### Fixed
