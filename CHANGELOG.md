@@ -5,6 +5,32 @@ All notable changes to this project will be documented in this file.
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [1.0.4] - 2026-08-20
+
+### Added
+- **Build stamping & version control (FWC-SOP-002)** - Git-derived version system
+- `/api/version` endpoint - Public JSON endpoint returns version, commit, build time, environment
+- `deploy.sh` script - Automated deployment with Git-derived version injection
+- `VersionFooter` component - Dynamic footer replacing hardcoded version string
+- Admin pages now show full version stamp: `v1.0.4 (commit) · build time`
+- Member pages show simple version: `FairwayConnect v1.0.4`
+- TEST environment displays TEST label in footer
+
+### Changed
+- Dockerfile now accepts build args: APP_VERSION, GIT_COMMIT, BUILD_TIME, NEXT_PUBLIC_ENV
+- Version derived from `git describe --tags --always` - never hand-typed
+- Post-deploy verification built into deploy script
+- Retro-tagged v1.0.2 (handicap fixes) and v1.0.3 (WhatsApp fixes)
+
+### Technical Details
+- Build args injected at Docker build time, baked into image
+- Version format: `vX.Y.Z` (on tag) or `vX.Y.Z-N-gCOMMIT` (commits past tag)
+- Deploy script verifies `/version` endpoint matches Git HEAD before reporting success
+- Commit: `52f7f97`
+- Deployed: 20 Aug 2026 05:49 UTC
+
+---
+
 ## [1.0.3] - 2026-08-19
 
 ### Fixed

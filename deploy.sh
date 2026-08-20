@@ -16,6 +16,25 @@ APP_VERSION=$(git describe --tags --always)
 GIT_COMMIT=$(git rev-parse --short HEAD)
 BUILD_TIME=$(date -u +"%Y-%m-%dT%H:%M:%SZ")
 
+# LIVE DEPLOYMENT GUARDRAIL: Require exact tag (no -N-g suffix)
+if [[ "$ENV" == "live" ]]; then
+  # Check if current commit is exactly on a tag
+  if ! git describe --exact-match HEAD &>/dev/null; then
+    echo "❌ LIVE DEPLOY BLOCKED: Current commit is not tagged"
+    echo "   Commit: $GIT_COMMIT"
+    echo "   Version: $APP_VERSION"
+    echo ""
+    echo "FWC-SOP-002: All LIVE deploys must be from tagged releases."
+    echo ""
+    echo "To fix:"
+    echo "  1. git tag -a v1.0.X -m 'Release notes'"
+    echo "  2. git push --tags"
+    echo "  3. ./deploy.sh live"
+    exit 1
+  fi
+  echo "✅ Tag verification passed: $APP_VERSION"
+fi
+
 # Map environment to Fly app name
 if [[ "$ENV" == "live" ]]; then
   FLY_APP="fairwayconnect-live"
